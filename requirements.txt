@@ -1,0 +1,9 @@
+numpy
+PIL
+requests
+urllib
+math
+transformers
+copy
+selenium
+bs4
