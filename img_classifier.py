@@ -10,7 +10,7 @@ class Image_Classifier:
         self.model = ViTForImageClassification.from_pretrained('google/vit-base-patch16-224')
 
     def get_predictions_from_url(self, url):
-        print("IMAGE at", url)
+        #print("IMAGE at", url)
         raw_data = requests.get(url, stream=True).raw
 
         image = Image.open(raw_data)

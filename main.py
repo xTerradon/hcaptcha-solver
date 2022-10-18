@@ -30,7 +30,7 @@ def get_solutions(website_url):
     print("TOTAL PREDICTIONS",demo_preds.size + captcha_preds.size)
 
     result = img_comparator.get_best_indexes(demo_preds, captcha_preds)
-
+    time.sleep(60)
 
 if __name__ == "__main__":
     website_url = "https://accounts.hcaptcha.com/demo"
