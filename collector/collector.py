@@ -25,7 +25,8 @@ def collect_data():
         captcha_type TEXT NOT NULL,
         image BLOB NOT NULL)""")
 
-    wd = wd_handler.Webdriver_Handler()
+    wd = wd_handler.Webdriver_Handler("176.31.111.139:80")
+    
     while True:
         captcha_str, demo_urls, captcha_urls = wd.get_all(url)
         captcha_str = captcha_str.replace("Please click each image containing a ","")

@@ -6,18 +6,26 @@ from selenium.webdriver.common.by import By
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium_stealth import stealth
+from selenium.webdriver.common.proxy import Proxy, ProxyType
+
+
 
 import time
 
 
 class Webdriver_Handler:
-    def __init__(self):
+    def __init__(self, proxy = None):
         options = webdriver.ChromeOptions()
         options.add_argument('disable-infobars')
         options.add_experimental_option('useAutomationExtension', False)
 
+        self.timeout = 5
+
         self.wd = None
-        
+        if proxy != None:
+            self.timeout = 30
+            options.add_argument('--proxy-server=%s' % proxy)
+
         try:
             self.wd = webdriver.Chrome("F:/python/chromedriver/chromedriver.exe", options=options)
         except:
@@ -28,7 +36,7 @@ class Webdriver_Handler:
             except:
                 print("chromedriver not found, trying different loc")
                 exit(-1)
-        self.wd.implicitly_wait(10)
+        self.wd.implicitly_wait(self.timeout)
         stealth(
             self.wd,
             languages=["en-US", "en"],
@@ -38,21 +46,22 @@ class Webdriver_Handler:
             renderer="Intel Iris OpenGL Engine",
             fix_hairline=True,
         )
+        print(self.wd.get_cookies())
 
 
     def check_for_integrity(self):
         self.wd.implicitly_wait(0.5)
         if len(self.wd.find_elements(By.XPATH, "/html/body/pre")) == 0:
-            self.wd.implicitly_wait(10)
+            self.wd.implicitly_wait(self.timeout)
             return
         else:
             print("Banned")
             self.wd.refresh()
+            time.sleep(5)
             self.check_for_integrity()
 
 
     def get_all(self, website_url : str, timeout : int = 10):
-        
         self.wd.get(website_url)
         print("Loaded Website")
 
