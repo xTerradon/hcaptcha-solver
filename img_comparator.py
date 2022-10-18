@@ -25,8 +25,6 @@ def get_absolute_diff(arr, comp, top_indexes = 0):
         return np.sum(np.abs(arr-comp))
     else:
         best_indexes = np.argsort(comp)[-top_indexes:]
-        print(best_indexes)
-
         return np.sum(np.abs(arr[best_indexes]-comp[best_indexes]))
 
 
