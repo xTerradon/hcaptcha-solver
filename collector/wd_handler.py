@@ -5,14 +5,19 @@ from selenium import webdriver
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.support.ui import WebDriverWait
+from selenium_stealth import stealth
+
+import time
 
 
 class Webdriver_Handler:
     def __init__(self):
         options = webdriver.ChromeOptions()
         options.add_argument('disable-infobars')
+        options.add_experimental_option('useAutomationExtension', False)
 
         self.wd = None
+        
         try:
             self.wd = webdriver.Chrome("F:/python/chromedriver/chromedriver.exe", options=options)
         except:
@@ -23,23 +28,50 @@ class Webdriver_Handler:
             except:
                 print("chromedriver not found, trying different loc")
                 exit(-1)
+        self.wd.implicitly_wait(10)
+        stealth(
+            self.wd,
+            languages=["en-US", "en"],
+            vendor="Google Inc.",
+            platform="Win32",
+            webgl_vendor="Intel Inc.",
+            renderer="Intel Iris OpenGL Engine",
+            fix_hairline=True,
+        )
 
 
-    def get_all_images(self, website_url : str, timeout : int = 10):
+    def check_for_integrity(self):
+        self.wd.implicitly_wait(0.5)
+        if len(self.wd.find_elements(By.XPATH, "/html/body/pre")) == 0:
+            self.wd.implicitly_wait(10)
+            return
+        else:
+            print("Banned")
+            self.wd.refresh()
+            self.check_for_integrity()
+
+
+    def get_all(self, website_url : str, timeout : int = 10):
         
         self.wd.get(website_url)
         print("Loaded Website")
+
+        self.check_for_integrity()
 
         WebDriverWait(self.wd, timeout).until(EC.frame_to_be_available_and_switch_to_it((By.XPATH,"/html/body/div[5]/form/fieldset/ul/li[2]/div/div/iframe")))
         WebDriverWait(self.wd, timeout).until(EC.element_to_be_clickable((By.XPATH, "/html/body/div/div[1]/div[1]/div/div/div[1]"))).click()
         print("Launched hCaptcha")
 
+        self.check_for_integrity()
         self.wd.switch_to.default_content()
 
         WebDriverWait(self.wd, timeout).until(EC.frame_to_be_available_and_switch_to_it((By.XPATH,"/html/body/div[6]/div[1]/iframe")))
-        WebDriverWait(self.wd, timeout).until(EC.element_to_be_clickable((By.XPATH, "/html/body/div[1]/div/div/div[1]/div[1]/div[3]/div[1]/div[2]/div[2]"))).click()
-        print("Extended Demo Images")
 
+        captcha_str = self.wd.find_element(By.XPATH, "/html/body/div[1]/div/div/div[1]/div[1]/div[1]/h2/span").text
+        print("Scraped hCaptcha string")
+        WebDriverWait(self.wd, timeout).until(EC.element_to_be_clickable((By.XPATH, "/html/body/div[1]/div/div/div[1]/div[1]/div[3]/div[1]/div[2]/div[2]"))).click()
+
+        self.check_for_integrity()
         demo_urls = []
         for i in range(3):
             try:
@@ -48,7 +80,7 @@ class Webdriver_Handler:
                 print(WebDriverWait(self.wd, timeout).until(EC.presence_of_element_located((By.XPATH, "/html/body/div[1]/div/div/div[1]/div[1]/div[3]/div["+str(i+1)+"]/div[1]/div[2]"))).get_attribute("style"))
             img_url = urljoin(website_url, img_url)
             demo_urls.append(img_url)
-        print("Added Demo Images")
+        print("Scraped Demo Images")
 
         urls = []
         for i in range(9):
@@ -58,6 +90,7 @@ class Webdriver_Handler:
                 print(WebDriverWait(self.wd, timeout).until(EC.presence_of_element_located((By.XPATH, "/html/body/div[1]/div/div/div[2]/div["+str(i+1)+"]/div[2]/div"))).get_attribute("style"))
             img_url = urljoin(website_url, img_url)
             urls.append(img_url)
-        print("Added Captcha Images")
+        print("Scraped Captcha Images")
 
-        return demo_urls, urls
+        return captcha_str, demo_urls, urls
+    
