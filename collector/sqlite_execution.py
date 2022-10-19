@@ -14,7 +14,8 @@ def add_new(name):
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             captcha_string TEXT NOT NULL,
             captcha_type TEXT NOT NULL,
-            image BLOB NOT NULL)""")
+            correct INTEGER,
+            image BLOB NOT NULL,)""")
     #cur.execute("DROP TABLE duck")
     #cur.execute("DELETE FROM captchas WHERE captcha_string = \'duck\'")
     cur.execute("INSERT INTO "+table_name+" SELECT * FROM captchas WHERE captcha_string = \'"+name+"\'")
@@ -32,4 +33,11 @@ def vacuum(name):
     con.execute("VACUUM")
     con.commit()
 
+def add_column_correct(name):
+    con = sqlite3.connect(name+".db")
+    con.execute("UPDATE "+name+" SET correct = 1 where captcha_type=\'demo\'")
+    con.commit()
+
 #add_new("cactus in a pot")
+#add_column_correct("jellyfish")
+

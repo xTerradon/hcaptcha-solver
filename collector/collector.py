@@ -25,6 +25,7 @@ def collect_data():
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         captcha_string TEXT NOT NULL,
         captcha_type TEXT NOT NULL,
+        correct INTEGER,
         image BLOB NOT NULL)""")
 
     wd = wd_handler.Webdriver_Handler()
@@ -35,12 +36,12 @@ def collect_data():
 
         for demo_url in demo_urls:
             demo_img = requests.get(demo_url, stream=True).content
-            cur.execute("INSERT INTO captchas(captcha_string, captcha_type, image) VALUES(?,?,?)",(captcha_str, "demo", demo_img))
+            cur.execute("INSERT INTO captchas(captcha_string, captcha_type, correct, image) VALUES(?,?,1,?)",(captcha_str, "demo", demo_img))
             con.commit()
         
         for captcha_url in captcha_urls:
             demo_img = requests.get(demo_url, stream=True).content
-            cur.execute("INSERT INTO captchas(captcha_string, captcha_type, image) VALUES(?,?,?)",(captcha_str, "captcha", demo_img))
+            cur.execute("INSERT INTO captchas(captcha_string, captcha_type, correct, image) VALUES(?,?,0,?)",(captcha_str, "captcha", demo_img))
             con.commit()
     
     img_content = cur.execute("SELECT image FROM captchas LIMIT 1").fetchone()[0]
