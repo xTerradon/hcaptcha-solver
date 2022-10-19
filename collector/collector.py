@@ -1,4 +1,5 @@
 import sqlite3
+import threading
 import time
 from io import BytesIO
 
@@ -18,7 +19,7 @@ def collect_data():
     strs = []
     url = "https://accounts.hcaptcha.com/demo"
 
-    con = sqlite3.connect("captchas.db")
+    con = sqlite3.connect("captchas.db", check_same_thread=False)
     cur = con.cursor()
 
     cur.execute("""CREATE TABLE IF NOT EXISTS captchas(
@@ -40,7 +41,7 @@ def collect_data():
             con.commit()
         
         for captcha_url in captcha_urls:
-            demo_img = requests.get(demo_url, stream=True).content
+            demo_img = requests.get(captcha_url, stream=True).content
             cur.execute("INSERT INTO captchas(captcha_string, captcha_type, correct, image) VALUES(?,?,0,?)",(captcha_str, "captcha", demo_img))
             con.commit()
     
@@ -57,3 +58,4 @@ def collect_data():
 
 if __name__ == '__main__':
     collect_data()
+    

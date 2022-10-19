@@ -39,5 +39,5 @@ def add_column_correct(name):
     con.commit()
 
 #add_new("cactus in a pot")
-#add_column_correct("jellyfish")
+#add_column_correct("duck")
 
