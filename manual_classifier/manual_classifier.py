@@ -43,15 +43,17 @@ class Manual_Classifier:
         decision_frame = tk.Frame(self.window)
 
         yes_button = tk.Button(decision_frame, text="YES", command=lambda : self.update_correct_value(1), width=15, height=5)
+        zero_button = tk.Button(decision_frame, text="0", command=lambda : self.update_correct_value(0), width=5, height=5)
         no_button = tk.Button(decision_frame, text="NO", command=lambda : self.update_correct_value(-1), width=15, height=5)
 
-        revise_button = tk.Button(self.window, text="GO BACK", command=lambda : self.load_last(), width=15, height=5)
+        revise_button = tk.Button(self.window, text="GO BACK", command=lambda : self.load_last(), width=15, height=2)
 
         self.info_label.pack(padx=50)
         self.captcha_label.pack(padx=20, pady=5)
         self.img_label.pack(padx=20, pady=5)
         
         yes_button.pack(side="left", padx=1, pady=1)
+        zero_button.pack(side="left", padx=1, pady=1)
         no_button.pack(side="right", padx=1, pady=1)
         decision_frame.pack(padx=5, pady=5)
 
@@ -86,9 +88,13 @@ class Manual_Classifier:
     
     def load_last(self):
         self.set_correct_value(0)
-        self.id_history = self.id_history[:-1]
-        self.img_id = self.id_history[-1]
+        if len(self.id_history) > 1:
+            self.img_id = self.id_history[-2]
+        else:
+            print("No history")
+            return
         self.set_correct_value(0)
+        self.id_history = self.id_history[:-2]
         self.get_data()
 
         self.load_data_to_ui()
