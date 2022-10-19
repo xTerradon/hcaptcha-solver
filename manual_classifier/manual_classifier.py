@@ -23,7 +23,7 @@ class Manual_Classifier:
                 max_id = max(self.id_history)
             element = self.con.execute("SELECT id, captcha_string, image, correct FROM "+self.name+" WHERE id > "+str(max_id)+" ORDER BY captcha_string LIMIT 1").fetchone()
         else:
-            element = self.con.execute("SELECT id, captcha_string, image, correct FROM "+self.name+" WHERE correct = 0 ORDER BY captcha_string LIMIT 1").fetchone()
+            element = self.con.execute("SELECT id, captcha_string, image, correct FROM "+self.name+" WHERE captcha_string = \'toy turtle\' AND correct = 0 ORDER BY captcha_string LIMIT 1").fetchone()
         self.img_id = element[0]
         self.id_history.append(self.img_id)
         self.captcha_string = element[1]
