@@ -1,10 +1,12 @@
-import wd_handler
-import numpy as np
-import time
 import sqlite3
-import requests
-from PIL import Image
+import time
 from io import BytesIO
+
+import numpy as np
+import requests
+import wd_handler
+from PIL import Image
+
 
 def get_binary_from_image(filename):
     # Convert digital data to binary format
@@ -25,7 +27,7 @@ def collect_data():
         captcha_type TEXT NOT NULL,
         image BLOB NOT NULL)""")
 
-    wd = wd_handler.Webdriver_Handler("176.31.111.139:80")
+    wd = wd_handler.Webdriver_Handler()
     
     while True:
         captcha_str, demo_urls, captcha_urls = wd.get_all(url)

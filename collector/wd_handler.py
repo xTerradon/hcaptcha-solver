@@ -1,16 +1,13 @@
+import time
 from urllib.parse import urljoin, urlparse
 
 from bs4 import BeautifulSoup
 from selenium import webdriver
 from selenium.webdriver.common.by import By
+from selenium.webdriver.common.proxy import Proxy, ProxyType
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium_stealth import stealth
-from selenium.webdriver.common.proxy import Proxy, ProxyType
-
-
-
-import time
 
 
 class Webdriver_Handler:
@@ -86,7 +83,8 @@ class Webdriver_Handler:
             try:
                 img_url = WebDriverWait(self.wd, timeout).until(EC.presence_of_element_located((By.XPATH, "/html/body/div[1]/div/div/div[1]/div[1]/div[3]/div["+str(i+1)+"]/div[1]/div[2]"))).get_attribute("style").split("url(\"")[1].split("\") ")[0]
             except:
-                print(WebDriverWait(self.wd, timeout).until(EC.presence_of_element_located((By.XPATH, "/html/body/div[1]/div/div/div[1]/div[1]/div[3]/div["+str(i+1)+"]/div[1]/div[2]"))).get_attribute("style"))
+                self.check_for_integrity()
+                return self.get_all(website_url)
             img_url = urljoin(website_url, img_url)
             demo_urls.append(img_url)
         print("Scraped Demo Images")
