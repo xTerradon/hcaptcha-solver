@@ -49,8 +49,10 @@ def get_unique_captcha_strings(name):
     print("LABELED")
     print(captcha_strings)
 
-get_unique_captcha_strings("captchas")
 
+get_unique_captcha_strings("captchas")
+vacuum("captchas")
+    
 #add_new("cactus in a pot")
 #add_column_correct("duck")
 

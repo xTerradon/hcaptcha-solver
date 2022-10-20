@@ -29,16 +29,14 @@ def collect_data():
         correct INTEGER,
         image BLOB NOT NULL)""")
 
-    wd = wd_handler.Webdriver_Handler()
+    wd = wd_handler.Webdriver_Handler(url)
+    wd.load_captcha()
     
     while True:
-        captcha_str, demo_urls, captcha_urls = wd.get_all(url)
+        
+        captcha_str, captcha_urls = wd.get_all_and_skip()
+        captcha_str = captcha_str.replace("Please click each image containing an ","")
         captcha_str = captcha_str.replace("Please click each image containing a ","")
-
-        for demo_url in demo_urls:
-            demo_img = requests.get(demo_url, stream=True).content
-            cur.execute("INSERT INTO captchas(captcha_string, captcha_type, correct, image) VALUES(?,?,1,?)",(captcha_str, "demo", demo_img))
-            con.commit()
         
         for captcha_url in captcha_urls:
             demo_img = requests.get(captcha_url, stream=True).content
