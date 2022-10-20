@@ -43,6 +43,10 @@ def add_column_correct(name):
 def get_unique_captcha_strings(name):
     con = sqlite3.connect(name+".db")
     captcha_strings = np.array(con.execute("SELECT captcha_string, COUNT(*) as count FROM captchas GROUP BY captcha_string ORDER BY count DESC").fetchall())
+    print("TOTAL")
+    print(captcha_strings)
+    captcha_strings = np.array(con.execute("SELECT captcha_string, COUNT(*) as count FROM captchas WHERE correct != 0 GROUP BY captcha_string ORDER BY count DESC").fetchall())
+    print("LABELED")
     print(captcha_strings)
 
 get_unique_captcha_strings("captchas")
