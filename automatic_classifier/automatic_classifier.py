@@ -17,4 +17,16 @@ if __name__ == "__main__":
     predictions = nnh.predict_images(captcha_string, images)
     print(predictions.reshape((3,3)))
     print(np.array(predictions > 0.5).reshape((3,3)))
+
+    # click images
+
+    # click next
+
+    # scrape
+    # predict
+    # click images
+
+    # click submit
+
+    # check verification
     
