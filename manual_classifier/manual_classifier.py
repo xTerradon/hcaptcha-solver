@@ -15,7 +15,7 @@ class Manual_Classifier:
         print("Opened Table",self.name)
     
     def get_unique_captcha_strings(self):
-        return list(np.array(self.con.execute("SELECT DISTINCT captcha_string FROM "+self.name).fetchall())[:,0])
+        return list(np.array(self.con.execute("SELECT DISTINCT captcha_string FROM "+self.name+" ORDER BY captcha_string").fetchall())[:,0])
     
     def get_data(self):
         
