@@ -29,10 +29,11 @@ class Manual_Classifier:
             element = self.con.execute("SELECT id, captcha_string, image, correct FROM "+self.name+" WHERE id > "+str(max_id)+" ORDER BY captcha_string LIMIT 1").fetchone()
         else:
             cs = self.captcha_selection.get()
+            print("Searching for images with",cs)
             self.number_total = self.con.execute("SELECT COUNT(rowid) FROM "+self.name+" WHERE captcha_string = \'"+cs+"\'").fetchone()[0]
             self.number_unclassified = self.con.execute("SELECT COUNT(rowid) FROM "+self.name+" WHERE captcha_string = \'"+cs+"\' AND correct = 0").fetchone()[0]
             element = self.con.execute("SELECT id, captcha_string, image, correct FROM "+self.name+" WHERE captcha_string = \'"+cs+"\' AND correct = 0 ORDER BY captcha_string LIMIT 1").fetchone()
-        if len(element) == 0:
+        if element == None:
             print("Could not resolve",self.captcha_selection.get())
             return
         self.img_id = element[0]
