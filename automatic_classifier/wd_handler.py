@@ -9,6 +9,11 @@ from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium_stealth import stealth
 
+import numpy as np
+import requests
+from PIL import Image
+from skimage.transform import resize
+from io import BytesIO
 
 class Webdriver_Handler:
     def __init__(self, website_url):
@@ -42,9 +47,11 @@ class Webdriver_Handler:
             fix_hairline=True,
         )
 
+    def load_and_get_all(self):
+        self.load_captcha()
+        return self.get_string_and_images()
 
     def load_captcha(self):
-        
         self.wd.get(self.website_url)
         print("Loaded Website")
 
@@ -64,9 +71,11 @@ class Webdriver_Handler:
         print("Switched to hCaptcha Challenge iframe")
 
     def get_string_and_images(self):
+        print()
         captcha_str = self.wd.find_element(By.XPATH, "/html/body/div[1]/div/div/div[1]/div[1]/div[1]/h2/span").text
         captcha_str = captcha_str.replace("Please click each image containing an ","")
         captcha_str = captcha_str.replace("Please click each image containing a ","")
+        captcha_str = captcha_str.replace(" ","_")
         print("Got hCaptcha string")
 
         images = []
@@ -74,8 +83,8 @@ class Webdriver_Handler:
             try:
                 img_url = WebDriverWait(self.wd, self.timeout).until(EC.presence_of_element_located((By.XPATH, "/html/body/div[1]/div/div/div[2]/div["+str(i+1)+"]/div[2]/div"))).get_attribute("style").split("url(\"")[1].split("\") ")[0]
             except:
-                self.check_for_integrity()
-                return self.load_captcha()
+                print("Cannot find Image",i+1)
+                return self.load_and_get_all()
             img_url = urljoin(self.website_url, img_url)
             img_content = requests.get(img_url, stream=True).content
             img = np.array(Image.open(BytesIO(img_content)))
@@ -85,12 +94,12 @@ class Webdriver_Handler:
                 img = img / 255
 
             images.append(img)
+        images = np.array(images)
         print("Got Captcha Images")
+        return captcha_str, images
 
-        # select model based on captcha_str
-
-        # model predictions
-
-        # print predictions
+    def skip_to_next_captcha(self):
+        WebDriverWait(self.wd, self.timeout).until(EC.element_to_be_clickable((By.XPATH, "//div[contains(@class, 'refresh button')]"))).click()
+        print("Clicked \"skip\" button")
 
   
