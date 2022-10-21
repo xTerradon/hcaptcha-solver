@@ -72,7 +72,7 @@ class Webdriver_Handler:
 
     def get_string_and_images(self):
         print()
-        captcha_str = self.wd.find_element(By.XPATH, "/html/body/div[1]/div/div/div[1]/div[1]/div[1]/h2/span").text
+        captcha_str = self.wd.find_element(By.XPATH, "//span[contains(text(),'click') and contains(text(),'image')]").text
         captcha_str = captcha_str.replace("Please click each image containing an ","")
         captcha_str = captcha_str.replace("Please click each image containing a ","")
         captcha_str = captcha_str.replace(" ","_")
@@ -99,7 +99,8 @@ class Webdriver_Handler:
         return captcha_str, images
 
     def skip_to_next_captcha(self):
-        WebDriverWait(self.wd, self.timeout).until(EC.element_to_be_clickable((By.XPATH, "//div[contains(@class, 'refresh button')]"))).click()
+        WebDriverWait(self.wd, self.timeout).until(EC.element_to_be_clickable((By.XPATH, "//div[contains(@class, 'refresh-on')]"))).click()
+        time.sleep(0.2)
         print("Clicked \"skip\" button")
 
   
