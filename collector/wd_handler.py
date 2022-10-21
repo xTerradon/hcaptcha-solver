@@ -94,7 +94,7 @@ class Webdriver_Handler:
             urls.append(img_url)
         print("Scraped Captcha Images")
 
-        WebDriverWait(self.wd, self.timeout).until(EC.element_to_be_clickable((By.XPATH, "/html/body/div[2]/div[8]"))).click()
+        WebDriverWait(self.wd, self.timeout).until(EC.element_to_be_clickable((By.XPATH, "//div[contains(@class, 'refresh button')]"))).click()
 
         return captcha_str, urls
     
