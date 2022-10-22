@@ -30,5 +30,8 @@ class NN_Handler:
         
     def has_model(self, captcha_string):
         return captcha_string in self.models.keys()
+    
+    def get_all_models(self):
+        return list(self.models.keys())
 
         

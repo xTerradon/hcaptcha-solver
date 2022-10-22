@@ -3,30 +3,40 @@ import wd_handler
 
 import numpy as np
 
+
 if __name__ == "__main__":
     nnh = nn_handler.NN_Handler()
-    wdh = wd_handler.Webdriver_Handler("https://accounts.hcaptcha.com/demo")
+    available_models = nnh.get_all_models()
+    #wdh = wd_handler.Webdriver_Handler("https://accounts.hcaptcha.com/demo")
+    wdh = wd_handler.Webdriver_Handler("https://freebitco.in/login",available_models)
 
     wdh.load_captcha()
 
-    captcha_string, images = wdh.get_string_and_images()
+    wdh.focus_on_captcha_frame()
+    captcha_string = wdh.get_string()
     while nnh.has_model(captcha_string) == False:
-        wdh.skip_to_next_captcha()
-        captcha_string, images = wdh.get_string_and_images()
+        wdh.click_refresh()
+        captcha_string= wdh.get_string()
     
+    images = wdh.get_images()
     predictions = nnh.predict_images(captcha_string, images)
-    print(predictions.reshape((3,3)))
-    print(np.array(predictions > 0.5).reshape((3,3)))
+    print(np.round(predictions.reshape((3,3)),2))
 
-    # click images
+    wdh.click_correct_images(predictions)
 
-    # click next
+    wdh.focus_on_captcha_frame()
+    captcha_string = wdh.get_string()
+    while nnh.has_model(captcha_string) == False:
+        wdh.click_refresh()
+        captcha_string= wdh.get_string()
+    
+    images = wdh.get_images()
+    predictions = nnh.predict_images(captcha_string, images)
+    print(np.round(predictions.reshape((3,3)),2))
 
-    # scrape
-    # predict
-    # click images
-
-    # click submit
+    wdh.click_correct_images(predictions)
 
     # check verification
+
+
     
