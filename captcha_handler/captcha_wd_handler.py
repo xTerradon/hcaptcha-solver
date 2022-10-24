@@ -40,23 +40,73 @@ class Captcha_Webdriver_Handler:
         print("Switched to root iframe")
 
     def focus_on_container_frame(self):
-        try:
-            WebDriverWait(self.wd, self.timeout).until(EC.frame_to_be_available_and_switch_to_it((By.XPATH,"//iframe[contains(@src,'hcaptcha.com') and contains(@title,'checkbox')]")))
-        except:
-            WebDriverWait(self.wd, self.timeout).until(EC.frame_to_be_available_and_switch_to_it((By.XPATH,"//iframe[@title=\"Captcha\"]")))
-            WebDriverWait(self.wd, self.timeout).until(EC.frame_to_be_available_and_switch_to_it((By.XPATH,"//iframe[contains(@src,'hcaptcha.com') and contains(@title,'checkbox')]")))
-        self.widget_state = 1
-        print("Switched to hCaptcha Container iframe")
+        self.wd.switch_to.default_content()
+        iframe_titles = [iframe.get_attribute("title") for iframe in self.wd.find_elements(By.XPATH, "//iframe")]
+        print(iframe_titles)
+        for iframe_title in iframe_titles:
+            self.wd.switch_to.default_content()
+            iframe = self.wd.find_element(By.XPATH, "//iframe[@title=\""+iframe_title+"\"]")
+            src = iframe.get_attribute("src")
+            title = iframe.get_attribute("title")
+            print("Looking in iframe",title)
+
+            self.wd.switch_to.frame(iframe)
+            if "hcaptcha.com" in src and "checkbox" in title:
+                self.widget_state = 1
+                print("Switched to hCaptcha Container iframe")
+                return
+            else:
+                time.sleep(0.5)
+                iframe_titles = [iframe.get_attribute("title") for iframe in self.wd.find_elements(By.XPATH, "//iframe")]
+                print(iframe_titles)
+                for iframe_title in iframe_titles:
+                    iframe = self.wd.find_element(By.XPATH, "//iframe[@title=\""+iframe_title+"\"]")
+                    src = iframe.get_attribute("src")
+                    title = iframe.get_attribute("title")
+                    print("Looking in iframe",title)
+                    self.wd.switch_to.frame(iframe)
+                    if "hcaptcha.com" in src and "checkbox" in title:
+                        self.widget_state = 1
+                        print("Switched to hCaptcha Container iframe")
+                        return
+
+        raise Exception("Could not switch to challenge hCaptcha container")
+        
 
     def focus_on_challenge_frame(self):
-        try:
-            WebDriverWait(self.wd, self.timeout).until(EC.frame_to_be_available_and_switch_to_it((By.XPATH,"//iframe[contains(@src,'hcaptcha.com') and contains(@title,'Main content')]")))
-        except:
-            WebDriverWait(self.wd, self.timeout).until(EC.frame_to_be_available_and_switch_to_it((By.XPATH,"//iframe[@title=\"Captcha\"]")))
-            WebDriverWait(self.wd, self.timeout).until(EC.frame_to_be_available_and_switch_to_it((By.XPATH,"//iframe[contains(@src,'hcaptcha.com') and contains(@title,'Main content')]")))
-        self.widget_state = 2
-        print("Switched to hCaptcha Challenge iframe")
+        self.wd.switch_to.default_content()
+        iframe_titles = [iframe.get_attribute("title") for iframe in self.wd.find_elements(By.XPATH, "//iframe")]
+        print(iframe_titles)
+        for iframe_title in iframe_titles:
+            self.wd.switch_to.default_content()
+            iframe = self.wd.find_element(By.XPATH, "//iframe[@title=\""+iframe_title+"\"]")
+            src = iframe.get_attribute("src")
+            title = iframe.get_attribute("title")
+            print("Looking in iframe",title)
 
+            self.wd.switch_to.frame(iframe)
+            if "hcaptcha.com" in src and "Main content" in title:
+                self.widget_state = 2
+                print("Switched to hCaptcha Challenge iframe")
+                return
+            else:
+                time.sleep(0.5)
+                iframe_titles = [iframe.get_attribute("title") for iframe in self.wd.find_elements(By.XPATH, "//iframe")]
+                print("2", iframe_titles)
+                for iframe_title in iframe_titles:
+                    iframe = self.wd.find_element(By.XPATH, "//iframe[@title=\""+iframe_title+"\"]")
+                    src = iframe.get_attribute("src")
+                    title = iframe.get_attribute("title")
+                    print("Looking in iframe",title)
+                    if "hcaptcha.com" in src and "Main content" in title:
+                        self.wd.switch_to.frame(iframe)
+                        self.widget_state = 2
+                        print("Switched to hCaptcha Challenge iframe")
+                        return
+
+        raise Exception("Could not switch to hCaptcha challenge")
+
+    
     def focus_on_frame(self, target_frame):
         if target_frame == self.widget_state:
             return
@@ -65,8 +115,7 @@ class Captcha_Webdriver_Handler:
             self.focus_on_root_frame()
             return
         if target_frame == 1:
-            if self.widget_state == 2:
-                self.focus_on_root_frame()
+            self.focus_on_root_frame()
             self.focus_on_container_frame()
             return
         if target_frame == 2:
@@ -76,11 +125,7 @@ class Captcha_Webdriver_Handler:
 
 
     def load_captcha(self):
-        try:
-            self.focus_on_frame(1)
-        except:
-            print("No hCaptcha iframe found")
-            return
+        self.focus_on_frame(1)
         
         # click hCaptcha container
         WebDriverWait(self.wd, self.timeout).until(EC.element_to_be_clickable((By.XPATH, "/html/body/div"))).click()
