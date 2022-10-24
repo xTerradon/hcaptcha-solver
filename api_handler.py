@@ -34,6 +34,10 @@ class Captcha_API:
             captcha_string = args["captcha_string"]
             print("Captcha String:", captcha_string)
 
+            normalized_string = self.cs.normalize_string(captcha_string)
+            if normalized_string == "":
+                return {"error":"could not find a model associated to the string \'captcha_string\'"}, 400
+
             images = args["images"]
             print("Images", images)
 
@@ -49,6 +53,7 @@ class Captcha_API:
             return {
                 "request_time":total_time, 
                 "captcha_string":captcha_string,
+                "normalized_string":normalized_string,
                 "predictions":predictions
                 }, 200
             
