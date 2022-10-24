@@ -3,7 +3,7 @@ from flask_restful import Resource, Api, reqparse
 
 import sys 
 import os
-sys.path.append(os.getcwd()+"\\captcha_solver")
+sys.path.append(os.getcwd()+"\\image_classifier")
 print(sys.path)
 from captcha_solver import Captcha_Solver
 
