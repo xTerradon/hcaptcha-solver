@@ -7,53 +7,51 @@ import numpy as np
 import requests
 import wd_handler
 from PIL import Image
+from datetime import datetime as dt
+import os
+
+from unidecode import unidecode
 
 
 def get_binary_from_image(filename):
-    # Convert digital data to binary format
+    """converts digital data to binary format"""
+
     with open(filename, 'rb') as file:
         blobData = file.read()
     return blobData
 
-def collect_data():
-    strs = []
-    url = "https://accounts.hcaptcha.com/demo"
 
-    con = sqlite3.connect("captchas.db", check_same_thread=False)
-    cur = con.cursor()
+def normalize_captcha_string(captcha_str):
+    captcha_str = unidecode(captcha_str)
+    captcha_str = captcha_str.replace("Please click each image containing an ","")
+    captcha_str = captcha_str.replace("Please click each image containing a ","")
+    return captcha_str
 
-    cur.execute("""CREATE TABLE IF NOT EXISTS captchas(
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        captcha_string TEXT NOT NULL,
-        captcha_type TEXT NOT NULL,
-        correct INTEGER,
-        image BLOB NOT NULL)""")
-
-    wd = wd_handler.Webdriver_Handler(url)
-    wd.load_captcha()
+def collect_data(db_handler, url="https://accounts.hcaptcha.com/demo"):
+    url_str = url.replace("https://","").replace("http://","")
+    wd = wd_handler.Webdriver_Handler()
     
-    while True:
-        
-        captcha_str, captcha_urls = wd.get_all_and_skip()
-        captcha_str = captcha_str.replace("Please click each image containing an ","")
-        captcha_str = captcha_str.replace("Please click each image containing a ","")
-        
+    for i in range(10):
+        captcha_str, captcha_urls = wd.load_captcha(url)
+        captcha_str = normalize_captcha_string(captcha_str)
+
         for captcha_url in captcha_urls:
-            demo_img = requests.get(captcha_url, stream=True).content
-            cur.execute("INSERT INTO captchas(captcha_string, captcha_type, correct, image) VALUES(?,?,0,?)",(captcha_str, "captcha", demo_img))
-            con.commit()
-    
-    img_content = cur.execute("SELECT image FROM captchas LIMIT 1").fetchone()[0]
-    image = Image.open(BytesIO(img_content))
-    image.show()
-        
-    # connect to url
-    # click captcha
-    # get string
-    # get demo imgs
-    # get captcha imgs
-    # save all to db
+            img = requests.get(captcha_url, stream=True).content
+            print(img, type(img))
+            img = Image.open(BytesIO(img))
+            # img.show()
 
-if __name__ == '__main__':
-    collect_data()
+            now = dt.now().strftime("%d-%H-%M-%S-%f")
+            file_path = f"./src/images/{captcha_str}/{now}.png"
+            create_dir_if_not_exists(f"./src/images/{captcha_str}")
+            img.save(file_path)
+
+            db_handler.add_image(file_path.replace("./src/images/",""), captcha_str, url_str, solved=False, category=None, commit=False)
+            print("Added image to db")
     
+        db_handler.commit()
+        print("Committed to db")
+
+def create_dir_if_not_exists(path):
+    if not os.path.exists(path):
+        os.makedirs(path)
