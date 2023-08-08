@@ -1,5 +1,4 @@
 import sqlite3
-
 import numpy as np
 
 
@@ -35,24 +34,13 @@ def vacuum(name):
     con.execute("VACUUM")
     con.commit()
 
-def add_column_correct(name):
-    con = sqlite3.connect(name+".db")
-    con.execute("UPDATE "+name+" SET correct = 1 where captcha_type=\'demo\'")
-    con.commit()
 
-def get_unique_captcha_strings(name):
+def get_unique_captcha_strings(name)
     con = sqlite3.connect(name+".db")
-    captcha_strings = np.array(con.execute("SELECT captcha_string, COUNT(*) as count FROM captchas GROUP BY captcha_string ORDER BY count DESC").fetchall())
-    print("TOTAL")
+    captcha_strings = con.execute("SELECT DISTINCT captcha_string, COUNT ( DISTINCT captcha_string ) FROM captchas").fetchall()
     print(captcha_strings)
-    captcha_strings = np.array(con.execute("SELECT captcha_string, COUNT(*) as count FROM captchas WHERE correct != 0 GROUP BY captcha_string ORDER BY count DESC").fetchall())
-    print("LABELED")
-    print(captcha_strings)
-
 
 get_unique_captcha_strings("captchas")
-vacuum("captchas")
-    
 #add_new("cactus in a pot")
 #add_column_correct("duck")
 
