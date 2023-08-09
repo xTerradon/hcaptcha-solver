@@ -43,6 +43,11 @@ class Sqlite_Handler:
         self.con.execute(f"UPDATE {self.table_name} SET solved = True, category = ? WHERE file_path = ?", (category, file_path))
         if commit : self.con.commit()
 
+    def unlabel_images(self, file_paths, commit=True):
+        """unlabels images as solved"""
+
+        self.cur.executemany(f"UPDATE {self.table_name} SET solved = False, category = NULL WHERE file_path = ?", file_paths)
+        if commit : self.con.commit()
 
     def get_amount_of_images(self):
         """returns the amount of images in the database for each captcha_string"""
@@ -67,7 +72,10 @@ class Sqlite_Handler:
         """retuns the amount of solvede and unsolved captchas for a given captcha string"""
 
         solved_unsolved = self.cur.execute(f"SELECT COUNT(*), solved FROM {self.table_name} WHERE captcha_string = ? GROUP BY solved ORDER BY solved", (captcha_string,)).fetchall()
-        return pd.Series([solved_unsolved[0][0], solved_unsolved[0][1]], index=["unsolved", "solved"], name=captcha_string, dtype=int)
+        if len(solved_unsolved) == 1:
+            # only solved
+            return pd.Series([solved_unsolved[0][0], 0], index=["unsolved", "solved"], name=captcha_string, dtype=int)
+        return pd.Series([solved_unsolved[0][0], solved_unsolved[1][0]], index=["unsolved", "solved"], name=captcha_string, dtype=int)
 
     def get_info(self):
         """get a df denoting total, unsolved and solved"""

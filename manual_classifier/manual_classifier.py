@@ -20,36 +20,40 @@ class Manual_Classifier:
         self.window = tk.Tk()
         self.window.bind("<Key>",self.key_input)
 
-        self.info_label = tk.Label(self.window, text="Loading...")
+        self.selection_frame = tk.Frame(self.window)
+
+        self.info_label = tk.Label(self.selection_frame, text="Loading...")
         self.captcha_selection = tk.StringVar()
         self.captcha_selection.set(self.db_handler.get_most_unsolved_captcha_string())
 
-        self.captcha_selector = ttk.Combobox(self.window, textvariable=self.captcha_selection)
+        self.captcha_selector = ttk.Combobox(self.selection_frame, textvariable=self.captcha_selection)
         self.captcha_selector['values'] =  self.db_handler.get_captcha_strings()
         self.captcha_selector.config(state="readonly")
         self.captcha_selector.bind('<<ComboboxSelected>>', lambda h : self.update_data())
 
-        self.captcha_label = tk.Label(self.window, text="Loading...")
+        self.captcha_label = tk.Label(self.selection_frame, text="Loading...", font=("Arial", 30))
 
         self.decision_frame = tk.Frame(self.window)
         self.set_images()
         self.set_info_label()
 
         self.menu_frame = tk.Frame(self.window)
-        self.go_back_button = tk.Button(self.menu_frame, text="Back")
-        self.show_solved_button = tk.Button(self.menu_frame, text="Show Solved")
-        self.continue_button = tk.Button(self.menu_frame, text="Continue")
+        self.go_back_button = tk.Button(self.menu_frame, text="Back", command=self.click_go_back)
+        self.show_solved_button = tk.Button(self.menu_frame, text="Show Solved") # TODO: new window with solved images
+        self.continue_button = tk.Button(self.menu_frame, text="Continue", command=self.click_continue)
 
+        self.selection_frame.pack(padx=5, pady=5)
+        self.captcha_selector.pack(side=tk.LEFT, padx=5, pady=5)
+        self.info_label.pack(side=tk.RIGHT, padx=50)
+        self.captcha_label.pack(side=tk.LEFT, padx=20, pady=5)
 
-        self.captcha_selector.pack(padx=5, pady=5)
-        self.info_label.pack(padx=50)
-        self.captcha_label.pack(padx=20, pady=5)
         self.decision_frame.pack(padx=5, pady=5)
-        self.menu_frame.pack(padx=5, pady=5)
 
+        self.menu_frame.pack(padx=5, pady=5)
         self.go_back_button.pack(side=tk.LEFT, padx=5, pady=5)
         self.show_solved_button.pack(side=tk.LEFT, padx=5, pady=5)
         self.continue_button.pack(side=tk.LEFT, padx=5, pady=5)
+
 
         tk.mainloop()
     
@@ -62,24 +66,26 @@ class Manual_Classifier:
         cs = self.captcha_selection.get()
         print(f"Setting images for {cs}")
 
-        image_paths = self.db_handler.get_unsolved_images_paths(cs, number=9)
-        images_pil = [Image.open(IMAGE_DIR+image_path).resize((200,200)) for image_path in image_paths]
+        self.selected_images = [False]*9
+        self.image_paths = self.db_handler.get_unsolved_images_paths(cs, number=9)
+        images_pil = [Image.open(IMAGE_DIR+image_path).resize((150,150)) for image_path in self.image_paths]
         images_tk = [ImageTk.PhotoImage(image_pil, master=self.decision_frame) for image_pil in images_pil]
 
         self.image_buttons = []
         self.image_frames = []
+
         for i in range(9):
             self.image_frames.append(tk.Frame(
                 self.decision_frame,
-                highlightbackground="red",
-                highlightthickness=10,
+                highlightbackground="gray",
+                highlightthickness=5,
                 bd=0, 
-                height=210, 
-                width=210))
+                height=160, 
+                width=160))
             self.image_buttons.append(tk.Button(
                 self.image_frames[-1], 
                 image=images_tk[i],
-                command=lambda : self.turn_red(self.image_frames[-1])))
+                command=lambda button_index = i: self.clicked_button(button_index)))
             self.image_buttons[-1].image = images_tk[i]
 
             self.image_buttons[-1].pack()
@@ -87,9 +93,31 @@ class Manual_Classifier:
 
 
     
-    def turn_red(self, i):
-        print(i)
-        i.config({"highlightbackground":"green"})
+    def clicked_button(self, i):
+        if self.selected_images[i] == False:
+            # selected the image
+            self.selected_images[i] = True
+            self.image_frames[i].config({"highlightbackground":"blue", "highlightthickness":"5"})
+        else:
+            # unselected the image
+            self.selected_images[i] = False
+            self.image_frames[i].config({"highlightbackground":"gray", "highlightthickness":"5"})
+
+    def click_continue(self):
+        for i, selected in enumerate(self.selected_images):
+            self.db_handler.label_image(self.image_paths[i], selected)
+            print(f"labeled {self.image_paths[i]} as {selected}")
+        self.id_history = pd.concat((self.id_history, pd.DataFrame({"id":self.image_paths, "action":self.selected_images})), ignore_index=True)
+        self.update_data()
+    
+    def click_go_back(self):
+        if len(self.id_history) >= 9:
+            self.db_handler.unlabel_images(self.id_history["id"].values[-9:])
+            self.id_history = self.id_history.iloc[:-9]
+            self.update_data()
+            print("undo last 9 actions")
+        else:
+            print("no actions to undo")
     
     def set_info_label(self):
         solvedinfo = self.db_handler.get_solved_unsolved_for_captcha_string(self.captcha_selection.get())
