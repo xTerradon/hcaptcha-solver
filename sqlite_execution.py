@@ -29,6 +29,11 @@ class Sqlite_Handler:
         """adds an image to the database"""
         self.cur.execute(f"INSERT INTO {self.table_name}(file_path, captcha_string, source_url, solved, category) VALUES(?,?,?,?,?)",(file_path, captcha_string, source_url, solved, category))
         if commit : self.con.commit()
+    
+    def add_images(self, images, commit=True):
+        """adds an image to the database"""
+        self.cur.executemany(f"INSERT INTO {self.table_name}(file_path, captcha_string, source_url, solved, category) VALUES(?,?,?,?,?)",images)
+        if commit : self.con.commit()
 
     def label_image(self, file_path, category, commit=True):
         """labels an image as solved with the given category"""
@@ -38,29 +43,61 @@ class Sqlite_Handler:
         self.con.execute(f"UPDATE {self.table_name} SET solved = True, category = ? WHERE file_path = ?", (category, file_path))
         if commit : self.con.commit()
 
+
     def get_amount_of_images(self):
         """returns the amount of images in the database for each captcha_string"""
 
         total_amounts = self.cur.execute(f"SELECT captcha_string, COUNT(*) FROM {self.table_name} GROUP BY captcha_string").fetchall()
-        return total_amounts
+        return pd.Series([total_amount[1] for total_amount in total_amounts], index=[total_amount[0] for total_amount in total_amounts], name="total", dtype=int)
     
     def get_amount_of_solved_images(self):
         """returns the amount of solved images in the database for each captcha_string"""
 
         solved_amounts = self.cur.execute(f"SELECT captcha_string, COUNT(*) FROM {self.table_name} WHERE solved = True GROUP BY captcha_string").fetchall()
-        return solved_amounts
+
+        return pd.Series([solved_amount[1] for solved_amount in solved_amounts], index=[solved_amount[0] for solved_amount in solved_amounts], name="solved", dtype=int)
 
     def get_amount_of_unsolved_images(self):
         """returns the amount of unsolved images in the database for each captcha_string"""
 
         unsolved_amounts = self.cur.execute(f"SELECT captcha_string, COUNT(*) FROM {self.table_name} WHERE solved = False GROUP BY captcha_string").fetchall()
-        return unsolved_amounts
+        return pd.Series([unsolved_amount[1] for unsolved_amount in unsolved_amounts], index=[unsolved_amount[0] for unsolved_amount in unsolved_amounts], name="unsolved", dtype=int)
 
-    def get_unsolved_images_paths(self, captcha_string):
+    def get_solved_unsolved_for_captcha_string(self, captcha_string):
+        """retuns the amount of solvede and unsolved captchas for a given captcha string"""
+
+        solved_unsolved = self.cur.execute(f"SELECT COUNT(*), solved FROM {self.table_name} WHERE captcha_string = ? GROUP BY solved ORDER BY solved", (captcha_string,)).fetchall()
+        return pd.Series([solved_unsolved[0][0], solved_unsolved[0][1]], index=["unsolved", "solved"], name=captcha_string, dtype=int)
+
+    def get_info(self):
+        """get a df denoting total, unsolved and solved"""
+
+        total_amounts = self.get_amount_of_images()
+        solved_amounts = self.get_amount_of_solved_images()
+        unsolved_amounts = self.get_amount_of_unsolved_images()
+        return pd.concat((total_amounts, solved_amounts, unsolved_amounts), axis=1)
+
+    def get_most_unsolved_captcha_string(self):
+        """returns the captcha_string with the most unsolved captchas"""
+
+        return self.get_amount_of_unsolved_images().sort_values(ascending=False).index[0]
+
+    def get_captcha_strings(self):
+        """returns all captcha_strings in the database"""
+
+        return [a[0] for a in self.cur.execute(f"SELECT DISTINCT captcha_string FROM {self.table_name}").fetchall()]
+
+    def get_unsolved_images_paths(self, captcha_string, number=9):
         """returns paths of unsolved images belonging to a captcha_string"""
 
-        paths = self.cur.execute(f"SELECT file_path FROM {self.table_name} WHERE solved = False AND captcha_string = ?", (captcha_string,)).fetchall()
-        return paths
+        paths = self.cur.execute(f"SELECT file_path FROM {self.table_name} WHERE solved = False AND captcha_string = ? LIMIT {number}", (captcha_string,)).fetchall()
+        return [path[0] for path in paths]
+
+    def get_most_unsolved_images_paths(self, number=9):
+        """returns paths of unsolved images belonging to the captcha_string with the most unsolved captchas"""
+
+        return self.get_unsolved_images_paths(self.get_most_unsolved_captcha_string(), number=number)
+
 
     def commit(self):
         """commits changes to the database"""
