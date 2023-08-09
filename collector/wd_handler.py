@@ -11,10 +11,12 @@ from selenium_stealth import stealth
 
 
 class Webdriver_Handler:
-    def __init__(self):
+    def __init__(self, url):
         options = webdriver.ChromeOptions()
         options.add_argument('disable-infobars')
         options.add_experimental_option('useAutomationExtension', False)
+
+        self.url = url
 
         self.timeout = 5
 
@@ -32,8 +34,8 @@ class Webdriver_Handler:
         )
 
 
-    def load_captcha(self, url):
-        self.wd.get(url)
+    def load_captcha(self):
+        self.wd.get(self.url)
         print("Loaded Website")
 
         WebDriverWait(self.wd, self.timeout).until(EC.frame_to_be_available_and_switch_to_it((By.XPATH,"//iframe[contains(@src,'hcaptcha') and contains(@src,'checkbox')]")))
@@ -41,31 +43,34 @@ class Webdriver_Handler:
         print("Launched hCaptcha")
 
         self.wd.switch_to.default_content()
-        return self.get_all_and_skip()
 
-
-
-    def get_all_and_skip(self):
         WebDriverWait(self.wd, self.timeout).until(EC.frame_to_be_available_and_switch_to_it((By.XPATH,"//iframe[contains(@src,'hcaptcha') and contains(@src,'challenge')]")))
         print("Switched to Captcha")
 
-        captcha_str = self.wd.find_element(By.XPATH, "//h2[@class='prompt-text']/span").text
-        print("Scraped hCaptcha string:", captcha_str)
 
-        image_divs = self.wd.find_elements(By.XPATH, "//div[@class='task-grid']//div[@class='image']")
-        print("Found image divs", image_divs)
+    def get_all_and_skip(self):
+        try:
+            captcha_str = self.wd.find_element(By.XPATH, "//h2[@class='prompt-text']/span").text
+            print("Scraped hCaptcha string:", captcha_str)
 
-        urls = []
-        for image_div in image_divs:
-            print(image_div.get_attribute("style"))
-            if "url" not in image_div.get_attribute("style") : continue
+            image_divs = self.wd.find_elements(By.XPATH, "//div[@class='task-grid']//div[@class='image']")
+            print("Found image divs", image_divs)
 
-            img_url = image_div.get_attribute("style").split("url(\"")[1].split("\") ")[0]
-            urls.append(img_url)
+            urls = []
+            for image_div in image_divs:
+                ims = image_div.get_attribute("style")
+                if "url" not in ims : continue
 
-        print("Scraped Captcha Images")
+                img_url = ims.split("url(\"")[1].split("\") ")[0]
+                urls.append(img_url)
 
-        # WebDriverWait(self.wd, self.timeout).until(EC.element_to_be_clickable((By.XPATH, "//div[contains(@class, 'refresh button')]"))).click()
+            print("Scraped Captcha Images")
+            print(urls)
 
-        return captcha_str, urls
+            WebDriverWait(self.wd, self.timeout).until(EC.element_to_be_clickable((By.XPATH, "//div[contains(@class, 'refresh button')]"))).click()
+
+            return captcha_str, urls
+        except:
+            self.load_captcha()
+            return self.get_all_and_skip()
     

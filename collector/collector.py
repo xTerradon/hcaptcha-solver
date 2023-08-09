@@ -11,6 +11,7 @@ from datetime import datetime as dt
 import os
 
 from unidecode import unidecode
+import threading
 
 
 def get_binary_from_image(filename):
@@ -22,6 +23,31 @@ def get_binary_from_image(filename):
 
 
 def normalize_captcha_string(captcha_str):
+    """normalizes the captcha string to a more readable format"""
+
+    captcha_str = captcha_str.replace("\u0441","c")
+    captcha_str = captcha_str.replace("\u043e","o")
+    captcha_str = captcha_str.replace("\u0430","a")
+    captcha_str = captcha_str.replace("\u0435","e")
+    captcha_str = captcha_str.replace("\u043d","h")
+    captcha_str = captcha_str.replace("\u0442","t")
+    captcha_str = captcha_str.replace("\u043c","m")
+    captcha_str = captcha_str.replace("\u043f","n")
+    captcha_str = captcha_str.replace("\u0440","p")
+    captcha_str = captcha_str.replace("\u0438","x")
+    captcha_str = captcha_str.replace("\u043b","b")
+    captcha_str = captcha_str.replace("\u0432","b")
+    captcha_str = captcha_str.replace("\u044f","r")
+    captcha_str = captcha_str.replace("\u0443","y")
+    captcha_str = captcha_str.replace("\u0436","x")
+    captcha_str = captcha_str.replace("\u043a","k")
+    captcha_str = captcha_str.replace("\u0437","3")
+    captcha_str = captcha_str.replace("\u0448","w")
+    captcha_str = captcha_str.replace("\u0447","4")
+    captcha_str = captcha_str.replace("\u0446","u")
+    captcha_str = captcha_str.replace("\u0449","w")
+    captcha_str = captcha_str.replace("\u044b","bl")
+
     captcha_str = unidecode(captcha_str)
     captcha_str = captcha_str.replace("Please click each image containing an ","")
     captcha_str = captcha_str.replace("Please click each image containing a ","")
@@ -29,28 +55,32 @@ def normalize_captcha_string(captcha_str):
 
 def collect_data(db_handler, url="https://accounts.hcaptcha.com/demo"):
     url_str = url.replace("https://","").replace("http://","")
-    wd = wd_handler.Webdriver_Handler()
+    wd = wd_handler.Webdriver_Handler(url)
+    wd.load_captcha()
     
     for i in range(10):
-        captcha_str, captcha_urls = wd.load_captcha(url)
+        captcha_str, captcha_urls = wd.get_all_and_skip()
         captcha_str = normalize_captcha_string(captcha_str)
 
-        for captcha_url in captcha_urls:
-            img = requests.get(captcha_url, stream=True).content
-            print(img, type(img))
-            img = Image.open(BytesIO(img))
-            # img.show()
+        with requests.Session() as s:
+            captcha_raw = [s.get(captcha_url).content for captcha_url in captcha_urls]
 
-            now = dt.now().strftime("%d-%H-%M-%S-%f")
-            file_path = f"./src/images/{captcha_str}/{now}.png"
-            create_dir_if_not_exists(f"./src/images/{captcha_str}")
-            img.save(file_path)
+        captcha_images = [Image.open(BytesIO(img)) for img in captcha_raw]
+        create_dir_if_not_exists(f"./src/images/{captcha_str}")
 
-            db_handler.add_image(file_path.replace("./src/images/",""), captcha_str, url_str, solved=False, category=None, commit=False)
-            print("Added image to db")
-    
-        db_handler.commit()
-        print("Committed to db")
+        now = dt.now().strftime("%d-%H-%M-%S-%f")
+        file_paths = [f"./src/images/{captcha_str}/{now}_{i}.png" for i in range(len(captcha_images))]
+        image_db_rows = [(file_path.replace("./src/images/",""), captcha_str, url_str, False, None) for file_path in file_paths]
+
+        threading.Thread(target=save_images_async, args=(captcha_images,file_paths)).start()
+
+        db_handler.add_images(image_db_rows)
+        print("Added images to db")
+
+
+def save_images_async(captcha_images, file_paths):
+    for i in range(len(captcha_images)):
+        captcha_images[i].save(file_paths[i])
 
 def create_dir_if_not_exists(path):
     if not os.path.exists(path):
