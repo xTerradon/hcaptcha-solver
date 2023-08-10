@@ -73,8 +73,11 @@ class Sqlite_Handler:
 
         solved_unsolved = self.cur.execute(f"SELECT COUNT(*), solved FROM {self.table_name} WHERE captcha_string = ? GROUP BY solved ORDER BY solved", (captcha_string,)).fetchall()
         if len(solved_unsolved) == 1:
-            # only solved
-            return pd.Series([solved_unsolved[0][0], 0], index=["unsolved", "solved"], name=captcha_string, dtype=int)
+            # either only solved or unsolved
+            if solved_unsolved[0][1] == 1:
+                return pd.Series([0, solved_unsolved[0][0]], index=["unsolved", "solved"], name=captcha_string, dtype=int)
+            else:
+                return pd.Series([solved_unsolved[0][0], 0], index=["unsolved", "solved"], name=captcha_string, dtype=int)
         return pd.Series([solved_unsolved[0][0], solved_unsolved[1][0]], index=["unsolved", "solved"], name=captcha_string, dtype=int)
 
     def get_info(self):
@@ -83,7 +86,7 @@ class Sqlite_Handler:
         total_amounts = self.get_amount_of_images()
         solved_amounts = self.get_amount_of_solved_images()
         unsolved_amounts = self.get_amount_of_unsolved_images()
-        return pd.concat((total_amounts, solved_amounts, unsolved_amounts), axis=1)
+        return pd.concat((total_amounts, solved_amounts, unsolved_amounts), axis=1).fillna(0).astype(int)
 
     def get_most_unsolved_captcha_string(self):
         """returns the captcha_string with the most unsolved captchas"""
@@ -101,10 +104,35 @@ class Sqlite_Handler:
         paths = self.cur.execute(f"SELECT file_path FROM {self.table_name} WHERE solved = False AND captcha_string = ? LIMIT {number}", (captcha_string,)).fetchall()
         return [path[0] for path in paths]
 
+    def get_solved_images_paths(self, captcha_string, number=9):
+        """returns paths of solved images belonging to a captcha_string"""
+
+        paths = self.cur.execute(f"SELECT file_path FROM {self.table_name} WHERE solved = True AND captcha_string = ? LIMIT {number}", (captcha_string,)).fetchall()
+        return [path[0] for path in paths]
+
+    def get_labeled_true_images_paths(self, captcha_string, number=9):
+        """returns paths of labeled true images belonging to a captcha_string"""
+
+        paths = self.cur.execute(f"SELECT file_path FROM {self.table_name} WHERE solved = True AND captcha_string = ? AND category = True LIMIT {number}", (captcha_string,)).fetchall()
+        return [path[0] for path in paths]
+    
+    def get_labeled_false_images_paths(self, captcha_string, number=9):
+        """returns paths of labeled false images belonging to a captcha_string"""
+
+        paths = self.cur.execute(f"SELECT file_path FROM {self.table_name} WHERE solved = True AND captcha_string = ? AND category = False LIMIT {number}", (captcha_string,)).fetchall()
+        return [path[0] for path in paths]
+
     def get_most_unsolved_images_paths(self, number=9):
         """returns paths of unsolved images belonging to the captcha_string with the most unsolved captchas"""
 
         return self.get_unsolved_images_paths(self.get_most_unsolved_captcha_string(), number=number)
+
+    def get_solved_data(self, captcha_string, number=9):
+        """returns data of solved images belonging to a captcha_string"""
+
+        return pd.DataFrame(
+            self.cur.execute(f"SELECT file_path, category FROM {self.table_name} WHERE solved = True AND captcha_string = ? LIMIT {number}", (captcha_string,)).fetchall(), 
+            columns=["path", "category"])
 
 
     def commit(self):
