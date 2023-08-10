@@ -92,6 +92,11 @@ class Sqlite_Handler:
         """returns the captcha_string with the most unsolved captchas"""
 
         return self.get_amount_of_unsolved_images().sort_values(ascending=False).index[0]
+    
+    def get_most_solved_captcha_string(self):
+        """returns the captcha_string with the most solved captchas"""
+
+        return self.get_amount_of_solved_images().sort_values(ascending=False).index[0]
 
     def get_captcha_strings(self):
         """returns all captcha_strings in the database"""
