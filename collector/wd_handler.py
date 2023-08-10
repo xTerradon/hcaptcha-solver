@@ -14,6 +14,8 @@ class Webdriver_Handler:
     def __init__(self, url):
         options = webdriver.ChromeOptions()
         options.add_argument('disable-infobars')
+        options.add_argument("--window-size=800,800")
+
         options.add_experimental_option('useAutomationExtension', False)
 
         self.url = url
@@ -49,12 +51,19 @@ class Webdriver_Handler:
 
 
     def get_all_and_skip(self):
-        try:
-            captcha_str = self.wd.find_element(By.XPATH, "//h2[@class='prompt-text']/span").text
+        try: 
+            self.wd.implicitly_wait(0.5)
+            captcha_strs = self.wd.find_elements(By.XPATH, "//h2[@class='prompt-text']/span")
+            self.wd.implicitly_wait(self.timeout)
+            if captcha_strs == []:
+                print("Newer captcha, reloading")
+                WebDriverWait(self.wd, self.timeout).until(EC.element_to_be_clickable((By.XPATH, "//div[contains(@class, 'refresh button')]"))).click()
+                return self.get_all_and_skip()
+            
+            captcha_str = captcha_strs[0].text
             print("Scraped hCaptcha string:", captcha_str)
 
             image_divs = self.wd.find_elements(By.XPATH, "//div[@class='task-grid']//div[@class='image']")
-            print("Found image divs", image_divs)
 
             urls = []
             for image_div in image_divs:
@@ -64,13 +73,13 @@ class Webdriver_Handler:
                 img_url = ims.split("url(\"")[1].split("\") ")[0]
                 urls.append(img_url)
 
-            print("Scraped Captcha Images")
             print(urls)
 
             WebDriverWait(self.wd, self.timeout).until(EC.element_to_be_clickable((By.XPATH, "//div[contains(@class, 'refresh button')]"))).click()
 
             return captcha_str, urls
-        except:
+        except Exception as e:
+            print("ERROR:", e)
             self.load_captcha()
             return self.get_all_and_skip()
     

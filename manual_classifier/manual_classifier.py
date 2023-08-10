@@ -37,10 +37,10 @@ class Manual_Classifier:
         self.set_images()
         self.set_info_label()
 
-        self.menu_frame = tk.Frame(self.window)
-        self.go_back_button = tk.Button(self.menu_frame, text="Back", command=self.click_go_back)
-        self.show_solved_button = tk.Button(self.menu_frame, text="Show Solved") # TODO: new window with solved images
-        self.continue_button = tk.Button(self.menu_frame, text="Continue", command=self.click_continue)
+        self.menu_frame = tk.Frame(self.window, width=self.window.winfo_width(), height=10)
+        self.go_back_button = tk.Button(self.menu_frame, text="Back", command=self.click_go_back, width=20, height=5)
+        self.show_solved_button = tk.Button(self.menu_frame, text="Show Solved", command=self.show_all_solved, width=20, height=5) # TODO: new window with solved images
+        self.continue_button = tk.Button(self.menu_frame, text="Continue", command=self.click_continue, width=20, height=5)
 
         self.selection_frame.pack(padx=5, pady=5)
         self.captcha_selector.pack(side=tk.LEFT, padx=5, pady=5)
@@ -49,11 +49,11 @@ class Manual_Classifier:
 
         self.decision_frame.pack(padx=5, pady=5)
 
-        self.menu_frame.pack(padx=5, pady=5)
         self.go_back_button.pack(side=tk.LEFT, padx=5, pady=5)
         self.show_solved_button.pack(side=tk.LEFT, padx=5, pady=5)
         self.continue_button.pack(side=tk.LEFT, padx=5, pady=5)
-
+        self.menu_frame.pack(padx=5, pady=5)
+        
 
         tk.mainloop()
     
@@ -66,15 +66,20 @@ class Manual_Classifier:
         cs = self.captcha_selection.get()
         print(f"Setting images for {cs}")
 
-        self.selected_images = [False]*9
+        
         self.image_paths = self.db_handler.get_unsolved_images_paths(cs, number=9)
+        self.selected_images = [False]*len(self.image_paths)
+
         images_pil = [Image.open(IMAGE_DIR+image_path).resize((150,150)) for image_path in self.image_paths]
         images_tk = [ImageTk.PhotoImage(image_pil, master=self.decision_frame) for image_pil in images_pil]
 
         self.image_buttons = []
         self.image_frames = []
 
+
         for i in range(9):
+            if i > len(self.image_paths)-1:
+                continue
             self.image_frames.append(tk.Frame(
                 self.decision_frame,
                 highlightbackground="gray",
@@ -112,7 +117,8 @@ class Manual_Classifier:
     
     def click_go_back(self):
         if len(self.id_history) >= 9:
-            self.db_handler.unlabel_images(self.id_history["id"].values[-9:])
+            print("unlabeling", self.id_history["id"].values[-9:])
+            self.db_handler.unlabel_images(self.id_history["id"].values[-9:].reshape((9,1)))
             self.id_history = self.id_history.iloc[:-9]
             self.update_data()
             print("undo last 9 actions")
@@ -134,3 +140,30 @@ class Manual_Classifier:
             self.load_last()
         else:
             print("KEYSTROKE NOT RECOGNIZED")
+    
+    def show_all_solved(self):
+        self.extra_window = tk.Toplevel(self.window)
+        self.extra_window.title("Solved Images")
+
+        labeled_true = tk.Frame(self.extra_window, width=300, height=550)
+        labeled_false = tk.Frame(self.extra_window, width=300, height=550)
+        
+
+        for i, image_path in enumerate(self.db_handler.get_labeled_true_images_paths(self.captcha_selection.get(), number=50)):
+            image_pil = Image.open(IMAGE_DIR+image_path).resize((60,60))
+            image_tk = ImageTk.PhotoImage(image_pil, master=self.extra_window)
+            l = tk.Label(labeled_true, image=image_tk)
+            l.image = image_tk
+            l.grid(row=i//5, column=i%5, padx=2, pady=2)
+
+        for i, image_path in enumerate(self.db_handler.get_labeled_false_images_paths(self.captcha_selection.get(), number=50)):
+            image_pil = Image.open(IMAGE_DIR+image_path).resize((60,60))
+            image_tk = ImageTk.PhotoImage(image_pil, master=self.extra_window)
+            l = tk.Label(labeled_false, image=image_tk)
+            l.image = image_tk
+            l.grid(row=i//5, column=i%5, padx=2, pady=2)
+
+        labeled_true.pack(side=tk.LEFT, padx=10, pady=5)
+        labeled_false.pack(side=tk.RIGHT, padx=10, pady=5)
+
+        self.extra_window.mainloop()
