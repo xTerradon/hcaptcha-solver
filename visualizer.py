@@ -22,7 +22,7 @@ def plot_captcha_info(info, threshold=50):
         ax1.barh(info.index, info.total, label="captured", color="darkgray")
         ax1.barh(info.index, info.solved, label="solved", color="blue")
     ax1.set_xlabel("# images")
-    ax1.set_xlim(0,200)
+    ax1.set_xlim(0,threshold*10)
 
     ax1.legend(loc="lower right")
     ax1.set_title("Captcha per Type")
