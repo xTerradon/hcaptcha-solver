@@ -3,8 +3,10 @@ import numpy as np
 import pandas as pd
 import os
 from pathlib import Path
+import PIL
 
 DB_FOLDER_PATH = Path("./src/databases/")
+IMAGES_DIR = "./src/images/"
 
 class Sqlite_Handler:
     def __init__(self, name="captchas"):
@@ -144,3 +146,14 @@ class Sqlite_Handler:
         """commits changes to the database"""
 
         self.con.commit()
+
+    def drop_duplicates(self):
+        """drops duplicates in the database"""
+
+        all_file_paths = [f[0] for f in self.cur.execute(f"SELECT file_path FROM {self.table_name}").fetchall()]
+        print(all_file_paths)
+        all_images = [np.asarray(PIL.Image.open(open(IMAGES_DIR+file_path, "rb"))).flatten() for file_path in all_file_paths]
+        print(all_images.shape)
+        # TODO: get index of duplicates
+        # delete png duplicates
+        # drop duplicates in db
