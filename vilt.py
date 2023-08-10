@@ -1,4 +1,4 @@
-from transformers import ViltProcessor, ViltForQuestionAnswering
+from transformers import ViltProcessor, ViltForQuestionAnswering, TrainingArguments, Trainer
 import requests
 import os
 import pandas as pd
@@ -44,4 +44,15 @@ class Vilt_Classifier:
 
         info["accuracy"] = [self.get_accuracy_by_captcha(db_handler, cs) for cs in captcha_strings]
         return info
-        
+
+    def finetune_vilt(self, db_handler):
+        # TODO: finetuning here
+        train_data = db_handler.get_solved_data("helicopter",100)
+
+        print("train data", train_data)
+        train_args = TrainingArguments("test_trainer")
+        trainer = Trainer(
+            model=self.model,
+            args=train_args,
+            train_dataset=train_data
+        )
