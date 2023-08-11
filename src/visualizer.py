@@ -6,7 +6,7 @@ def plot_captcha_info(info, figsize=(4,10), threshold=100):
     fig.set_figheight(figsize[0])
     fig.set_figwidth(figsize[1])
 
-    info = info.sort_values("solved")
+    info = info.sort_values(["solved","total"])
 
     if "accuracy" in info.columns:
         ax2 = ax1.twiny()

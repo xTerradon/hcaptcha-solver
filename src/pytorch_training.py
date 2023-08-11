@@ -17,7 +17,7 @@ MODELS_DIR = "../data/models/"
 
 class Training:
     def __init__(self):
-        self.batch_size = 32
+        self.batch_size = 16
         self.test_batch_size = 1000
         self.lr = 0.001
         self.log_interval = 1
@@ -66,7 +66,7 @@ class Training:
                     test_loss += self.criterion(output, target).item()
                     pred = output.round()
                     correct += pred.eq(target.view_as(pred)).sum().item()
-            test_len = len(test_loader.dataset) - len(test_loader.dataset) % self.batch_size
+            test_len = len(test_loader.dataset)
             test_loss /= test_len
             losses.append(test_loss)
             if verbose : print(f'Epoch: {epoch}, Test Loss: {test_loss:.4f}, Accuracy: {correct}/{test_len}, {100. * correct / test_len:.2f}%')
@@ -111,18 +111,21 @@ class Model:
             return output.round().detach().numpy()
 
 
-def data_to_loader(x, y, test_split=0.25, batch_size=32):
+def data_to_loader(x, y, test_split=0.25, batch_size=16):
+    assert len(x) == len(y), "x and y must have the same length"
+    assert len(x) >= 40, "at least 40 samples required for training"
+
     x_train = torch.from_numpy(x).float()
     y_train = torch.from_numpy(y).float()
 
     dataset = utils.TensorDataset(x_train, y_train)
-    train_size = int((1 - test_split) * len(dataset))
-    test_size = len(dataset) - train_size
+    test_size = len(dataset) // 5
+    train_size = len(dataset) - test_size
     print(f"train size: {train_size}, test size: {test_size}")
     train_dataset, test_dataset = torch.utils.data.random_split(dataset, [train_size, test_size])
 
     train_loader = utils.DataLoader(train_dataset, batch_size=batch_size, drop_last=True, shuffle=True)
-    test_loader = utils.DataLoader(test_dataset, batch_size=batch_size, drop_last=True, shuffle=True)
+    test_loader = utils.DataLoader(test_dataset, batch_size=test_size, drop_last=True, shuffle=True)
 
     print("single element shape:", train_loader.dataset[0][0].shape)
 
