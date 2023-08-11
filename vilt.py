@@ -32,8 +32,8 @@ class Vilt_Classifier:
         predictions = self.predict_by_paths(captcha_string, data["path"])
         data["predicted"] = pd.Series(predictions, dtype=int)
         data["correct"] = data["predicted"] == data["category"]
-        data
-
+        
+        print(f"Correct: {data['correct'].sum()}/{len(data)}, Accuracy: {100.*data['correct'].sum()/len(data):.2f}%")
         return data["correct"].mean()
 
     def get_accuracy_for_all_captchas(self, db_handler, threshold=50):
@@ -42,8 +42,8 @@ class Vilt_Classifier:
         captcha_strings = info.index.values
         print(f"Calculating accuracy for {len(captcha_strings)} captchas which satisfied the threshold of {threshold} solved images")
 
-        info["accuracy"] = [self.get_accuracy_by_captcha(db_handler, cs) for cs in captcha_strings]
-        return info
+        ret = pd.Series([self.get_accuracy_by_captcha(db_handler, cs) for cs in captcha_strings], index=captcha_strings, name="vilt_accuracy")
+        return ret
 
     def finetune_vilt(self, db_handler):
         # TODO: finetuning here
