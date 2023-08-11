@@ -5,6 +5,9 @@ import torch.nn.functional as F
 import torch.optim as optim
 import torch.utils.data as utils
 
+from datetime import datetime as dt
+import os
+
 import PIL
 
 IMAGE_DIR = "./src/images/"
@@ -14,14 +17,14 @@ class Training:
         self.batch_size = 16
         self.test_batch_size = 1000
         self.epochs = 20
-        self.lr = 0.00001
+        self.lr = 0.0001
         self.log_interval = 1
 
         self.model = nn.Sequential(
-            nn.Conv2d(3, 20, kernel_size=5),
+            nn.Conv2d(3, 16, kernel_size=5),
             nn.ReLU(),
             nn.MaxPool2d(2, stride=2),
-            nn.Conv2d(20, 10, kernel_size=5),
+            nn.Conv2d(16, 10, kernel_size=5),
             nn.ReLU(),
             nn.MaxPool2d(2, stride=2),
             nn.Flatten(),
@@ -34,7 +37,7 @@ class Training:
         self.optimizer = optim.Adam(self.model.parameters(), lr=self.lr)
         self.criterion = nn.BCELoss()
 
-    def train(self, train_loader, test_loader):
+    def train(self, train_loader, test_loader, verbose=True):
         for epoch in range(1, self.epochs + 1):
             # training
             self.model.train()
@@ -57,8 +60,8 @@ class Training:
                     correct += pred.eq(target.view_as(pred)).sum().item()
             
             test_loss /= len(test_loader.dataset)
-            print(output[0])
-            print(f'Epoch: {epoch}, Test set: Average loss: {test_loss:.4f}, Accuracy: {correct}/{len(test_loader.dataset)}, {100. * correct / len(test_loader.dataset):.0f}%')
+            if verbose : print(f'Epoch: {epoch}, Test set: Average loss: {test_loss:.4f}, Accuracy: {correct}/{len(test_loader.dataset)}, {100. * correct / len(test_loader.dataset):.2f}%')
+        return self.model
             
 
 def data_to_loader(x, y, test_split=0.25, batch_size=16):
@@ -79,13 +82,15 @@ def data_to_loader(x, y, test_split=0.25, batch_size=16):
     return train_loader, test_loader
 
     
-def train_model_on_captcha_string(db_handler, captcha_string=None, batch_size=16):
+def train_model_on_captcha_string(db_handler, captcha_string=None, save=True):
     if captcha_string is None:
         captcha_string = db_handler.get_most_solved_captcha_string()
     print(f'Training model on {captcha_string}...')
     data = db_handler.get_solved_data(captcha_string, 1000)
     x = np.asarray([np.asarray(PIL.Image.open(open(IMAGE_DIR+path, 'rb'))) for path in data["path"]])
+    x = x / 255 # norming
     x = np.moveaxis(x, [1,2,3], [2,3,1]) # color channel first
+    print(x[0])
     y = data["category"].values.reshape(-1,1)
     print(f"x shape: {x.shape}")
     print(f"y shape: {y.shape}")
@@ -93,7 +98,22 @@ def train_model_on_captcha_string(db_handler, captcha_string=None, batch_size=16
     train_loader, test_loader = data_to_loader(x, y)
 
     training = Training()
-    training.train(train_loader, test_loader)
+    model = training.train(train_loader, test_loader)
+
+    if save:
+        now = dt.now().strftime("%d-%H-%M-%S-%f")
+        if not os.path.exists(f"./src/models/{captcha_string}"):
+            os.makedirs(f"./src/models/{captcha_string}")
+        path = f"./src/models/{captcha_string}/{now}"
+        torch.save(model.state_dict(), path)
+        print(f"Saved model to {path}")
+
+def train_models_on_all_captcha_strings(db_handler, threshold=100, save=True):
+    info = db_handler.get_info()
+    info = info[info["solved"] >= threshold]
+    captcha_strings = info.index.values
+    for captcha_string in captcha_strings:
+        train_model_on_captcha_string(db_handler, captcha_string, save=save)
 
     
     
