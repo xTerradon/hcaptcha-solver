@@ -3,7 +3,7 @@ import numpy as np
 import pandas as pd
 import os
 from pathlib import Path
-import PIL
+import PIL.Image
 
 DB_FOLDER_PATH = Path("./src/databases/")
 IMAGES_DIR = "./src/images/"
@@ -147,13 +147,23 @@ class Sqlite_Handler:
 
         self.con.commit()
 
-    def drop_duplicates(self):
+    def drop_duplicates(self, commit=True):
         """drops duplicates in the database"""
 
         all_file_paths = [f[0] for f in self.cur.execute(f"SELECT file_path FROM {self.table_name}").fetchall()]
-        print(all_file_paths)
-        all_images = [np.asarray(PIL.Image.open(open(IMAGES_DIR+file_path, "rb"))).flatten() for file_path in all_file_paths]
-        print(all_images.shape)
-        # TODO: get index of duplicates
-        # delete png duplicates
-        # drop duplicates in db
+        print(f"Found {len(all_file_paths)} images in database")
+        hashed = [np.asarray(PIL.Image.open(IMAGES_DIR+file_path)).data.tobytes() for file_path in all_file_paths]
+        un = np.unique(hashed, return_index=True, return_counts=True)
+
+        duplicate_indexes = np.delete(np.arange(len(all_file_paths)),un[1])
+        duplicate_filepaths = [(all_file_paths[i],) for i in duplicate_indexes]
+        print(f"Found {len(duplicate_filepaths)} duplicates in database")
+        
+        self.cur.executemany(f"DELETE FROM {self.table_name} WHERE file_path = ?", duplicate_filepaths)
+
+        for file_path in duplicate_filepaths:
+            os.remove(IMAGES_DIR+file_path[0])
+
+        if commit : self.commit()
+
+        print(f"Removed {len(duplicate_filepaths)} duplicates from database")
