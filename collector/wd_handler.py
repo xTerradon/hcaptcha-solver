@@ -68,21 +68,21 @@ class Webdriver_Handler:
             captcha_strs = self.wd.find_elements(By.XPATH, "//h2[@class='prompt-text']/span")
             self.wd.implicitly_wait(self.timeout)
             if captcha_strs == []:
-                print("Newer captcha")
+                print("Captcha V2")
                 captcha_string = self.wd.find_element(By.XPATH, "//h2[@class='prompt-text']").text
                 captcha_string = captcha_string.replace("Please click on the ","").replace(" ","_")
                 
                 if captcha_string != "":
-                    print("Taking screenshot of canvas")
                     self.make_screenshot_of_canvas(captcha_string)
                 else:
-                    print("No captcha string found")
+                    print("No captcha string found, refreshing")
                 
                 WebDriverWait(self.wd, self.timeout).until(EC.element_to_be_clickable((By.XPATH, "//div[contains(@class, 'refresh button')]"))).click()
                 return self.get_all_and_skip()
-            
+
+            print("Captcha V1")
             captcha_str = captcha_strs[0].text
-            print("Scraped hCaptcha string:", captcha_str)
+            print("captcha string:", captcha_str)
 
             image_divs = self.wd.find_elements(By.XPATH, "//div[@class='task-grid']//div[@class='image']")
 
@@ -94,7 +94,7 @@ class Webdriver_Handler:
                 img_url = ims.split("url(\"")[1].split("\") ")[0]
                 urls.append(img_url)
 
-            print(urls)
+            # print(urls)
 
             WebDriverWait(self.wd, self.timeout).until(EC.element_to_be_clickable((By.XPATH, "//div[contains(@class, 'refresh button')]"))).click()
 
@@ -113,8 +113,6 @@ class Webdriver_Handler:
         canvas_loc = self.wd.find_element(By.XPATH, "//div[@class='challenge-view']/canvas").location
         canvas_size = self.wd.find_element(By.XPATH, "//div[@class='challenge-view']/canvas").size
         
-        print(canvas_loc, canvas_size)
-        print(self.iframe_location)
         img = PIL.Image.open(BytesIO(self.wd.get_screenshot_as_png()))
         img = img.crop((
             self.iframe_location["x"]+canvas_loc["x"], 
