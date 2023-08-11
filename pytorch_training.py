@@ -10,7 +10,7 @@ import os
 
 import PIL
 
-IMAGE_DIR = "./src/images/"
+IMAGE_DIR = "./src/images/v1/"
 
 class Training:
     def __init__(self):

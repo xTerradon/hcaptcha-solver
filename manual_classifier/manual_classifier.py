@@ -9,7 +9,7 @@ from PIL import Image, ImageTk
 
 from copy import deepcopy as copy
 
-IMAGE_DIR = "./src/images/"
+IMAGE_DIR = "./src/images/v1/"
 
 
 class Manual_Classifier:

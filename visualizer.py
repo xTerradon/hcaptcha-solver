@@ -1,10 +1,10 @@
 from matplotlib import pyplot as plt
 
-def plot_captcha_info(info, threshold=100):
+def plot_captcha_info(info, figsize=(4,10), threshold=100):
     fig, ax1 = plt.subplots()
 
-    fig.set_figheight(4)
-    fig.set_figwidth(10)
+    fig.set_figheight(figsize[0])
+    fig.set_figwidth(figsize[1])
 
     info = info.sort_values("solved")
 

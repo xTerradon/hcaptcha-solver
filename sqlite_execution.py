@@ -6,7 +6,7 @@ from pathlib import Path
 import PIL.Image
 
 DB_FOLDER_PATH = Path("./src/databases/")
-IMAGES_DIR = "./src/images/"
+IMAGES_DIR = "./src/images/v1/"
 
 class Sqlite_Handler:
     def __init__(self, name="captchas"):
@@ -14,7 +14,7 @@ class Sqlite_Handler:
         self.cur = self.con.cursor()
         self.table_name = self.create_captchas_table()
 
-    def create_captchas_table(self, table_name="captchas"):
+    def create_captchas_table(self, table_name="captchas_v1"):
         """creates a table for captchas if it does not yet exist"""
 
         self.cur.execute(f"""CREATE TABLE IF NOT EXISTS {table_name}(

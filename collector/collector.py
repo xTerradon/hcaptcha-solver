@@ -71,11 +71,11 @@ def collect_data(db_handler, url="https://accounts.hcaptcha.com/demo", count=100
             captcha_raw = [s.get(captcha_url).content for captcha_url in captcha_urls]
 
         captcha_images = [Image.open(BytesIO(img)) for img in captcha_raw]
-        create_dir_if_not_exists(f"./src/images/{captcha_str}")
+        create_dir_if_not_exists(f"./src/images/v1/{captcha_str}")
 
         now = dt.now().strftime("%d-%H-%M-%S-%f")
-        file_paths = [f"./src/images/{captcha_str}/{now}_{i}.png" for i in range(len(captcha_images))]
-        image_db_rows = [(file_path.replace("./src/images/",""), captcha_str, url_str, False, None) for file_path in file_paths]
+        file_paths = [f"./src/images/v1/{captcha_str}/{now}_{i}.png" for i in range(len(captcha_images))]
+        image_db_rows = [(file_path.replace("./src/images/v1",""), captcha_str, url_str, False, None) for file_path in file_paths]
 
         threading.Thread(target=save_images_async, args=(captcha_images,file_paths)).start()
 

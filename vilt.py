@@ -5,7 +5,7 @@ import pandas as pd
 from PIL import Image
 import torch
 
-IMAGE_DIR = "src/images/"
+IMAGE_DIR = "src/images/v1/"
 
 class Vilt_Classifier:
     def __init__(self):

@@ -9,6 +9,10 @@ from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium_stealth import stealth
 
+from datetime import datetime as dt
+import os
+import PIL.Image
+from io import BytesIO
 
 class Webdriver_Handler:
     def __init__(self, url):
@@ -56,7 +60,12 @@ class Webdriver_Handler:
             captcha_strs = self.wd.find_elements(By.XPATH, "//h2[@class='prompt-text']/span")
             self.wd.implicitly_wait(self.timeout)
             if captcha_strs == []:
-                print("Newer captcha, reloading")
+                print("Newer captcha")
+                captcha_string = self.wd.find_element(By.XPATH, "//h2[@class='prompt-text']").text
+                captcha_string = captcha_string.replace("Please click on the ","").replace(" ","_")
+
+                self.make_screenshot_of_canvas()
+                
                 WebDriverWait(self.wd, self.timeout).until(EC.element_to_be_clickable((By.XPATH, "//div[contains(@class, 'refresh button')]"))).click()
                 return self.get_all_and_skip()
             
@@ -83,3 +92,17 @@ class Webdriver_Handler:
             self.load_captcha()
             return self.get_all_and_skip()
     
+    def make_screenshot_of_canvas(self):
+        canvas = self.wd.find_element(By.XPATH, "//div[@class='challenge-view']/canvas")
+
+        now = dt.now().strftime("%d-%H-%M-%S-%f")
+        if not os.path.exists(f"src/images/v2/{captcha_string}"):
+            os.makedirs(f"src/images/v2/{captcha_string}")
+        path = f"src/images/v2/{captcha_string}/{now}.png"
+        
+        img = PIL.Image.open(BytesIO(self.wd.get_screenshot_as_png()))
+        img = img.crop((canvas.location["x"], canvas.location["y"], canvas.location["x"]+canvas.size["width"], canvas.location["y"]+canvas.size["height"]))
+        img.save(path)
+
+        print(f"Saved screenshot to {path}")
+
