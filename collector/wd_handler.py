@@ -18,7 +18,7 @@ class Webdriver_Handler:
     def __init__(self, url):
         options = webdriver.ChromeOptions()
         options.add_argument('disable-infobars')
-        options.add_argument("--window-size=800,800")
+        options.add_argument("--window-size=800,820")
 
         options.add_experimental_option('useAutomationExtension', False)
 
