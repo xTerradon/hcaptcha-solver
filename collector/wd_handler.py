@@ -39,6 +39,8 @@ class Webdriver_Handler:
             fix_hairline=True,
         )
 
+        self.iframe = None
+
 
     def load_captcha(self):
         self.wd.get(self.url)
@@ -50,21 +52,31 @@ class Webdriver_Handler:
 
         self.wd.switch_to.default_content()
 
+        WebDriverWait(self.wd, self.timeout).until(EC.visibility_of_element_located((By.XPATH,"//iframe[contains(@src,'hcaptcha') and contains(@src,'challenge')]")))
+        self.iframe_location = self.wd.find_element(By.XPATH, "//iframe[contains(@src,'hcaptcha') and contains(@src,'challenge')]").location
+        print(self.iframe_location)
+
         WebDriverWait(self.wd, self.timeout).until(EC.frame_to_be_available_and_switch_to_it((By.XPATH,"//iframe[contains(@src,'hcaptcha') and contains(@src,'challenge')]")))
+        WebDriverWait(self.wd, self.timeout).until(EC.element_to_be_clickable((By.XPATH, "/html/body")))
+
         print("Switched to Captcha")
 
 
     def get_all_and_skip(self):
         try: 
-            self.wd.implicitly_wait(0.5)
+            self.wd.implicitly_wait(1)
             captcha_strs = self.wd.find_elements(By.XPATH, "//h2[@class='prompt-text']/span")
             self.wd.implicitly_wait(self.timeout)
             if captcha_strs == []:
                 print("Newer captcha")
                 captcha_string = self.wd.find_element(By.XPATH, "//h2[@class='prompt-text']").text
                 captcha_string = captcha_string.replace("Please click on the ","").replace(" ","_")
-
-                self.make_screenshot_of_canvas()
+                
+                if captcha_string != "":
+                    print("Taking screenshot of canvas")
+                    self.make_screenshot_of_canvas(captcha_string)
+                else:
+                    print("No captcha string found")
                 
                 WebDriverWait(self.wd, self.timeout).until(EC.element_to_be_clickable((By.XPATH, "//div[contains(@class, 'refresh button')]"))).click()
                 return self.get_all_and_skip()
@@ -92,16 +104,23 @@ class Webdriver_Handler:
             self.load_captcha()
             return self.get_all_and_skip()
     
-    def make_screenshot_of_canvas(self):
-        canvas = self.wd.find_element(By.XPATH, "//div[@class='challenge-view']/canvas")
-
+    def make_screenshot_of_canvas(self, captcha_string):
         now = dt.now().strftime("%d-%H-%M-%S-%f")
         if not os.path.exists(f"src/images/v2/{captcha_string}"):
             os.makedirs(f"src/images/v2/{captcha_string}")
         path = f"src/images/v2/{captcha_string}/{now}.png"
+
+        canvas_loc = self.wd.find_element(By.XPATH, "//div[@class='challenge-view']/canvas").location
+        canvas_size = self.wd.find_element(By.XPATH, "//div[@class='challenge-view']/canvas").size
         
+        print(canvas_loc, canvas_size)
+        print(self.iframe_location)
         img = PIL.Image.open(BytesIO(self.wd.get_screenshot_as_png()))
-        img = img.crop((canvas.location["x"], canvas.location["y"], canvas.location["x"]+canvas.size["width"], canvas.location["y"]+canvas.size["height"]))
+        img = img.crop((
+            self.iframe_location["x"]+canvas_loc["x"], 
+            self.iframe_location["y"]+canvas_loc["y"], 
+            self.iframe_location["x"]+canvas_loc["x"]+canvas_size["width"], 
+            self.iframe_location["y"]+canvas_loc["y"]+canvas_size["height"]))
         img.save(path)
 
         print(f"Saved screenshot to {path}")
