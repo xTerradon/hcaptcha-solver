@@ -8,6 +8,7 @@ import torch.utils.data as utils
 from datetime import datetime as dt
 import os
 import pandas as pd
+from copy import deepcopy as copy
 
 import PIL
 
@@ -40,9 +41,10 @@ class Training:
         self.optimizer = optim.Adam(self.model.parameters(), lr=self.lr)
         self.criterion = nn.BCELoss()
 
-    def train(self, train_loader, test_loader, verbose=True, epochs=20, early_stopping=5):
+    def train(self, train_loader, test_loader, verbose=True, epochs=50, early_stopping=10):
         losses = []
         early_stopping_counter = 0
+        best_model = None
         for epoch in range(1, epochs + 1):
             # training
             self.model.train()
@@ -75,6 +77,9 @@ class Training:
                     break
             else:
                 early_stopping_counter = 0
+                best_model = copy(self.model)
+
+        self.model = best_model
         return self.model
 
 class Model:
