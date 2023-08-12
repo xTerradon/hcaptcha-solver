@@ -7,31 +7,77 @@ import requests
 from requests import Session
 from unidecode import unidecode
 
+from matplotlib import pyplot as plt
 
 class Captcha_Solver:
     def __init__(self):
         self.models = mh.Model_Handler()
-        pass
 
     def is_captcha_present(self, wd):
+        """
+        Checks if a hCaptcha is present on the currently viewed webdriver page.
+        Returns True if a captcha is present, False otherwise.
+
+        :param driver: The web driver instance representing the browser session.
+        :type driver: WebDriver
+        :return: True if a CAPTCHA is detected, False otherwise.
+        :rtype: bool
+        """
+
         return wh.is_captcha_present(wd)
     
     def solve_captcha(self, wd):
-        wh.launch_captcha(wd)
+        """
+        Solves a hCaptcha Checkbox on the currently viewed webdriver page.
+
+        :param driver: The web driver instance representing the browser session.
+        :type driver: WebDriver
+        """
+
+        if not wh.is_challenge_present(wd):
+            print("Launching hCaptcha...")
+            wh.launch_captcha(wd)
+
+        wh.refresh_all_v2(wd)
         self.solve_challenge(wd)
 
-    def solve_challenge(self, wd):
-        captcha_instructions, captcha_urls = wh.get_challenge_data(wd)
+
+    def solve_challenge(self, wd, debug=False):
+        """
+        Solves an opened hCaptcha Challenge on the currently viewed webdriver page.
+        
+        :param driver: The web driver instance representing the browser session.
+        :type driver: WebDriver
+        """
+
+        try:
+            captcha_instructions, captcha_urls = wh.get_challenge_data(wd)
+        except Exception as e:
+            print("Failed to get challenge data, trying again...")
+            self.solve_captcha(wd)
+        
+        captcha_str = normalize_captcha_string(captcha_instructions)
+        print(f"Found Captcha task: {captcha_str}")
+
+        if captcha_str not in list(self.models.models.keys()):
+            print(f"Model for captcha string {captcha_str} not found, trying again...")
+            wh.refresh_challenge(wd)
+            self.solve_captcha(wd)
 
         with Session() as s:
             captcha_images = [Image.open(BytesIO(s.get(captcha_url).content)) for captcha_url in captcha_urls]
-        captcha_str = normalize_captcha_string(captcha_instructions)
-        print(captcha_str)
-        [display(img) for img in captcha_images]
 
-        is_correct = self.models.solve_images(captcha_str, captcha_images)
+        plt.axis('off')
+        [plt.subplot(3, 3, i + 1).imshow(img) for i, img in enumerate(captcha_images)]
+        plt.show()
 
-        if not wh.click_correct(wd, is_correct):
+        image_labels = self.models.get_labels(captcha_str, captcha_images)
+
+        wh.click_correct(wd, image_labels)
+
+        time.sleep(1.0)
+
+        if not wh.is_captcha_solved(wd):
             print("Captcha solving failed, trying again...")
             self.solve_challenge(wd)
         else:

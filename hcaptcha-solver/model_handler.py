@@ -21,7 +21,6 @@ class Model_Handler:
     def __init__(self):
         print("Initializing model handler...")
         self.models = {}
-        print("os.getcwd():", os.getcwd())
         for model_name in os.listdir(MODELS_DIR):
             try:
                 self.models[model_name] = Model(model_name)
@@ -30,12 +29,8 @@ class Model_Handler:
                 print(e)
         print(f"Loaded {len(self.models)} models")
     
-    def solve_images(self, captcha_string, pil_images):
+    def get_labels(self, captcha_string : str, pil_images : list):
         print(f"Predicting {len(pil_images)} images...")
-
-        if captcha_string not in list(self.models.keys()):
-            print(f"Model for captcha string {captcha_string} not found")
-            return None
 
         x = self.preprocess_pil_images(pil_images)
         y = list(self.models[captcha_string].predict(x))
@@ -48,7 +43,7 @@ class Model_Handler:
 
         return is_correct
 
-    def preprocess_pil_images(self, pil_images):
-        x = np.asarray([np.asarray(img) for img in pil_images]) / 255
+    def preprocess_pil_images(self, pil_images : list):
+        x = np.asarray([np.asarray(img) for img in pil_images]) / 255 # norming [0,1]
         x = np.moveaxis(x, [1,2,3], [2,3,1]) # color channel first
         return x
