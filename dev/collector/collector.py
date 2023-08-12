@@ -9,6 +9,7 @@ import wd_handler
 from PIL import Image
 from datetime import datetime as dt
 import os
+import time
 
 from unidecode import unidecode
 import threading
@@ -54,7 +55,7 @@ def normalize_captcha_string(captcha_str):
     captcha_str = captcha_str.replace("Please click each image containing a ","")
     return captcha_str
 
-def collect_data(db_handler, url="https://accounts.hcaptcha.com/demo", count=100, collect_v2=False):
+def collect_data(db_handler, url="https://accounts.hcaptcha.com/demo", count=100, collect_v2=False, limit=2000):
     if type(url) == list:
         print(f"Starting Threads for {len(url)} URLs")
         [threading.Thread(target=lambda: collect_data(db_handler, single_url, count=count)).start() for single_url in url]
@@ -66,6 +67,9 @@ def collect_data(db_handler, url="https://accounts.hcaptcha.com/demo", count=100
     
     i = 0
     while True:
+        info = db_handler.get_info()
+        limited_captcha_strings = info[info["total"] > limit]["total"].index.values
+
         try:
             captcha_str, captcha_urls = wd.get_all_and_skip(collect_v2)
         except Exception as e:
@@ -73,6 +77,11 @@ def collect_data(db_handler, url="https://accounts.hcaptcha.com/demo", count=100
             continue
 
         captcha_str = normalize_captcha_string(captcha_str)
+
+        if captcha_str in limited_captcha_strings:
+            print(f"{captcha_str:<16}: Captcha string is limited, skipping")
+            time.sleep(1.0)
+            continue
 
         with requests.Session() as s:
             captcha_raw = [s.get(captcha_url).content for captcha_url in captcha_urls]

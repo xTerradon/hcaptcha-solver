@@ -95,9 +95,8 @@ class Webdriver_Handler:
                 img_url = ims.split("url(\"")[1].split("\") ")[0]
                 urls.append(img_url)
 
-            # print(urls)
-
             WebDriverWait(self.wd, self.timeout).until(EC.element_to_be_clickable((By.XPATH, "//div[contains(@class, 'refresh button')]"))).click()
+            # WebDriverWait(self.wd, self.timeout).until(EC.element_to_be_clickable((By.XPATH, "//div[contains(@class, 'submit button')]"))).click()
 
             return captcha_str, urls
         except Exception as e:
