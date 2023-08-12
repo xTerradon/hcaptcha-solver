@@ -6,6 +6,7 @@ from pathlib import Path
 import PIL.Image
 
 DATABASES_DIR = "../data/databases/"
+IMAGES_DIR = "../data/images/v1/"
 
 class Sqlite_Handler:
     def __init__(self, name="captchas"):
@@ -87,7 +88,7 @@ class Sqlite_Handler:
         total_amounts = self.get_amount_of_images()
         solved_amounts = self.get_amount_of_solved_images()
         unsolved_amounts = self.get_amount_of_unsolved_images()
-        return pd.concat((total_amounts, solved_amounts, unsolved_amounts), axis=1).fillna(0).astype(int)
+        return pd.concat((total_amounts, solved_amounts, unsolved_amounts), axis=1).fillna(0).astype(int).sort_values(by="solved", ascending=False)
 
     def get_most_unsolved_captcha_string(self):
         """returns the captcha_string with the most unsolved captchas"""
@@ -151,6 +152,13 @@ class Sqlite_Handler:
 
         all_file_paths = [f[0] for f in self.cur.execute(f"SELECT file_path FROM {self.table_name}").fetchall()]
         print(f"Found {len(all_file_paths)} images in database")
+        for file_path in all_file_paths:
+            if not os.path.exists(IMAGES_DIR+file_path):
+                self.cur.execute(f"DELETE FROM {self.table_name} WHERE file_path = ?", (file_path,))
+            
+        all_file_paths = [f[0] for f in self.cur.execute(f"SELECT file_path FROM {self.table_name}").fetchall()]
+        print(f"Found {len(all_file_paths)} images in database after removing non existing images")
+
         hashed = [np.asarray(PIL.Image.open(IMAGES_DIR+file_path)).data.tobytes() for file_path in all_file_paths]
         un = np.unique(hashed, return_index=True, return_counts=True)
 

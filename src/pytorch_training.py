@@ -19,7 +19,7 @@ class Training:
     def __init__(self):
         self.batch_size = 16
         self.test_batch_size = 1000
-        self.lr = 0.001
+        self.lr = 0.0001
         self.log_interval = 1
 
         self.model = nn.Sequential(  
@@ -113,13 +113,13 @@ class Model:
 
 def data_to_loader(x, y, test_split=0.25, batch_size=16):
     assert len(x) == len(y), "x and y must have the same length"
-    assert len(x) >= 40, "at least 40 samples required for training"
+    assert len(x) >= 64, "at least 64 samples required for training"
 
     x_train = torch.from_numpy(x).float()
     y_train = torch.from_numpy(y).float()
 
     dataset = utils.TensorDataset(x_train, y_train)
-    test_size = len(dataset) // 5
+    test_size = int(len(dataset) * test_split)
     train_size = len(dataset) - test_size
     print(f"train size: {train_size}, test size: {test_size}")
     train_dataset, test_dataset = torch.utils.data.random_split(dataset, [train_size, test_size])
@@ -157,7 +157,7 @@ def train_model_on_captcha_string(db_handler, captcha_string=None, save=True):
             i = 1
         else:
             i = len([a for a in os.listdir(f"{MODELS_DIR}{captcha_string}") if now in a]) + 1
-        path = f"{MODELS_DIR}{captcha_string}/{now}_{i}"
+        path = f"{MODELS_DIR}{captcha_string}/{now}_{str(i).zfill(2)}"
         torch.save(model.state_dict(), path)
         print(f"Saved model to {path}")
 
