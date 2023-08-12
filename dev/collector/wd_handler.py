@@ -14,7 +14,7 @@ import os
 import PIL.Image
 from io import BytesIO
 
-IMAGES_DIR_V2 = "../../data/images/v2/"
+IMAGES_DIR_V2 = "../data/images/v2/"
 
 class Webdriver_Handler:
     def __init__(self, url):
@@ -69,8 +69,9 @@ class Webdriver_Handler:
             captcha_strs = self.wd.find_elements(By.XPATH, "//h2[@class='prompt-text']/span")
             self.wd.implicitly_wait(self.timeout)
             if captcha_strs == []:
-                print("Captcha V2")
                 if collect_v2:
+                    print("Captcha V2")
+
                     captcha_string = self.wd.find_element(By.XPATH, "//h2[@class='prompt-text']").text
                     captcha_string = captcha_string.replace("Please click on the ","").replace(" ","_")
                     
@@ -113,13 +114,13 @@ class Webdriver_Handler:
         canvas_loc = self.wd.find_element(By.XPATH, "//div[@class='challenge-view']/canvas").location
         canvas_size = self.wd.find_element(By.XPATH, "//div[@class='challenge-view']/canvas").size
         
-        img = PIL.Image.open(BytesIO(self.wd.get_screenshot_as_png()))
-        img = img.crop((
-            self.iframe_location["x"]+canvas_loc["x"], 
-            self.iframe_location["y"]+canvas_loc["y"], 
-            self.iframe_location["x"]+canvas_loc["x"]+canvas_size["width"], 
-            self.iframe_location["y"]+canvas_loc["y"]+canvas_size["height"]))
-        img.save(path)
+        with PIL.Image.open(BytesIO(self.wd.get_screenshot_as_png())) as img:
+            img = img.crop((
+                self.iframe_location["x"]+canvas_loc["x"], 
+                self.iframe_location["y"]+canvas_loc["y"], 
+                self.iframe_location["x"]+canvas_loc["x"]+canvas_size["width"], 
+                self.iframe_location["y"]+canvas_loc["y"]+canvas_size["height"]))
+            img.save(path)
 
         print(f"Saved screenshot to {path}")
 
