@@ -1,5 +1,6 @@
 from matplotlib import pyplot as plt
 import numpy as np
+import pandas as pd
 
 def plot_captcha_info(info, figsize=(4,10), threshold=100):
     fig, ax1 = plt.subplots()
@@ -21,6 +22,8 @@ def plot_captcha_info(info, figsize=(4,10), threshold=100):
 
 
 def plot_model_accuracy(info, figsize=(4,10)):
+    if type(info) == pd.Series:
+        info = info.to_frame()
     fig, ax1 = plt.subplots()
 
     fig.set_figheight(figsize[0])
@@ -34,10 +37,10 @@ def plot_model_accuracy(info, figsize=(4,10)):
     ax1.axhline(95, color="red", label="goal", linestyle=":", alpha=0.8)
 
     if len(accuracy_columns) == 1:
-        ax1.bar(info.index, info[accuracy_columns[0]]*100.0, label=accuracy_columns[0].replace("accuracy","").replace("_","_"), color="green", alpha=0.8)
+        ax1.bar(info.index, info[accuracy_columns[0]]*100.0, label=accuracy_columns[0].replace("accuracy","").replace("_",""), color="green", alpha=0.8)
     else:
         for accuracy_column in accuracy_columns:
-            ax1.plot(info.index, info[accuracy_column]*100.0, label=accuracy_column.replace("accuracy","").replace("_","_"))
+            ax1.plot(info.index, info[accuracy_column]*100.0, label=accuracy_column.replace("accuracy","").replace("_",""))
 
     ax1.set_ylim(50,100)
     ax1.set_ylabel("Labeling Accuracy [%]")
