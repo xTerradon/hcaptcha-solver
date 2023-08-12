@@ -1,7 +1,7 @@
-> _**This project is not in a ready-to-use state.** It is currently being overhauled and will soon be usable as a python package_
+> **This project is not packaged yet, but its functionality is shown in [./hcaptcha-solver/testing.ipynb](https://github.com/xTerradon/hcaptcha-solver/blob/main/hcaptcha-solver/testing.ipynb)**
 
 ## Intended Functionality
-`CaptchaSolver` is the parent class from which one can call:
+`Captcha_Solver` is the parent class from which one can call:
 - `is_captcha_present(selenium.webdriver)`: returns True if a solvable hCaptcha is present, otherwise False
 - `solve_captcha(selenium.webdriver)`: navigates to an available hCaptcha and solves it by clicking the correct images
 
@@ -13,19 +13,19 @@
 - **Testing Loop for Pretrained ViLT models** from [huggingface](https://huggingface.co/dandelin/vilt-b32-finetuned-vqa)
 
 ## Data Availability
-<img src="https://github.com/xTerradon/hcaptcha-solver/assets/64305142/8e1e78ce-7476-437b-8a1d-69c50174a5e3" alt="Data Availability">
+![Data Availability](https://github.com/xTerradon/hcaptcha-solver/assets/64305142/044a5642-d3a7-47c1-b1ad-36eb43bbfc2e)
+
 
 ## Model Choice
 hCaptcha has different tasks for which different ML models will be used.
-For the v1 ("Click each image that contains ..."), the options are:
-- **Pretrained ViLT model:** https://huggingface.co/dandelin/vilt-b32-finetuned-vqa \
-  -> is slow has bad accuracy in some tasks (_see Figure "ViLT Accuracy on labeled data"_)
-- **Finetuned ViLT model:** is slow and will take lots of time to train
-- **Freshly trained CNNs:** can be suited perfectly to the task, but needs sufficient data
+- For the v1 ("Click each image that contains `item`") self-trained CNN models will be used to click the correct images.
+- For the v2 ("Click on the `animal` in the image"), a YOLO model will be chosen under the same aspects.
+- For the v3 ("Is this `animal` a 1. 2. 3. ?"), a self-trained CNN will be used to choose the correct answer.
 
-For the v2 (click  on the ... in the image), a YOLO model will be chosen under the same aspects.
+Currently only the v1 version is ready-to-use; other tasks are skipped. The Program is capable of automatically solving several captcha types.
 
 ## Model Performance (v1)
-<img src="https://github.com/xTerradon/hcaptcha-solver/assets/64305142/3b882156-6beb-4b53-ac0c-b4eac555b45e" alt="Model Accuracy">
+![CNN Labeling Accuracy](https://github.com/xTerradon/hcaptcha-solver/assets/64305142/4eb5d025-56a7-4e5d-91b9-5364a248f200)
+
 
 _(updated 12 Aug. 2023)_
