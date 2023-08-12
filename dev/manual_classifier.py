@@ -76,7 +76,6 @@ class Manual_Classifier:
         self.image_buttons = []
         self.image_frames = []
 
-
         for i in range(9):
             if i > len(self.image_paths)-1:
                 continue
@@ -97,7 +96,6 @@ class Manual_Classifier:
             self.image_frames[-1].grid(row=i//3, column=i%3, padx=5, pady=5)
 
 
-    
     def clicked_button(self, i):
         if self.selected_images[i] == False:
             # selected the image

@@ -105,16 +105,22 @@ class Sqlite_Handler:
 
         return [a[0] for a in self.cur.execute(f"SELECT DISTINCT captcha_string FROM {self.table_name}").fetchall()]
 
-    def get_unsolved_images_paths(self, captcha_string, number=9):
+    def get_unsolved_images_paths(self, captcha_string, number=9, random=True):
         """returns paths of unsolved images belonging to a captcha_string"""
-
-        paths = self.cur.execute(f"SELECT file_path FROM {self.table_name} WHERE solved = False AND captcha_string = ? LIMIT {number}", (captcha_string,)).fetchall()
+        
+        if random:
+            paths = self.cur.execute(f"SELECT file_path FROM {self.table_name} WHERE id IN (SELECT id FROM {self.table_name} WHERE solved = False AND captcha_string = ? ORDER BY RANDOM() LIMIT {number})", (captcha_string,)).fetchall()
+        else:
+            paths = self.cur.execute(f"SELECT file_path FROM {self.table_name} WHERE solved = False AND captcha_string = ? LIMIT {number}", (captcha_string,)).fetchall()
         return [path[0] for path in paths]
 
-    def get_solved_images_paths(self, captcha_string, number=9):
+    def get_solved_images_paths(self, captcha_string, number=9, random=True):
         """returns paths of solved images belonging to a captcha_string"""
 
-        paths = self.cur.execute(f"SELECT file_path FROM {self.table_name} WHERE solved = True AND captcha_string = ? LIMIT {number}", (captcha_string,)).fetchall()
+        if random:
+            paths = self.cur.execute(f"SELECT file_path FROM {self.table_name} WHERE id IN (SELECT id FROM {self.table_name} WHERE solved = True AND captcha_string = ? ORDER BY RANDOM() LIMIT {number})", (captcha_string,)).fetchall()
+        else:
+            paths = self.cur.execute(f"SELECT file_path FROM {self.table_name} WHERE solved = True AND captcha_string = ? LIMIT {number}", (captcha_string,)).fetchall()
         return [path[0] for path in paths]
 
     def get_labeled_true_images_paths(self, captcha_string, number=9):
@@ -152,19 +158,21 @@ class Sqlite_Handler:
 
         all_file_paths = [f[0] for f in self.cur.execute(f"SELECT file_path FROM {self.table_name}").fetchall()]
         print(f"Found {len(all_file_paths)} images in database")
+
+        removed = 0
         for file_path in all_file_paths:
             if not os.path.exists(IMAGES_DIR+file_path):
                 self.cur.execute(f"DELETE FROM {self.table_name} WHERE file_path = ?", (file_path,))
-            
+                removed += 1
+        print(f"Removed {removed} non-existing images")
+
         all_file_paths = [f[0] for f in self.cur.execute(f"SELECT file_path FROM {self.table_name}").fetchall()]
-        print(f"Found {len(all_file_paths)} images in database after removing non existing images")
 
         hashed = [np.asarray(PIL.Image.open(IMAGES_DIR+file_path)).data.tobytes() for file_path in all_file_paths]
         un = np.unique(hashed, return_index=True, return_counts=True)
 
         duplicate_indexes = np.delete(np.arange(len(all_file_paths)),un[1])
         duplicate_filepaths = [(all_file_paths[i],) for i in duplicate_indexes]
-        print(f"Found {len(duplicate_filepaths)} duplicates in database")
         
         self.cur.executemany(f"DELETE FROM {self.table_name} WHERE file_path = ?", duplicate_filepaths)
 

@@ -2,7 +2,7 @@ from matplotlib import pyplot as plt
 import numpy as np
 import pandas as pd
 
-def plot_captcha_info(info, figsize=(4,10), threshold=100):
+def plot_captcha_info(info, figsize=(4,10), threshold=100, limit=False):
     fig, ax1 = plt.subplots()
 
     fig.set_figheight(figsize[0])
@@ -15,7 +15,8 @@ def plot_captcha_info(info, figsize=(4,10), threshold=100):
     ax1.barh(info.index, info.solved, label="solved", color="blue")
 
     ax1.set_xlabel("# Images")
-    ax1.set_xlim(0,threshold*10)
+    if limit:
+        ax1.set_xlim(0,threshold*10)
 
     ax1.legend(loc="lower right")
     ax1.set_title("Available Images per Captcha Type")

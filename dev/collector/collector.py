@@ -13,7 +13,7 @@ import os
 from unidecode import unidecode
 import threading
 
-IMAGES_DIR = "../../data/images/v1/"
+IMAGES_DIR = "../data/images/v1/"
 
 def get_binary_from_image(filename):
     """converts digital data to binary format"""
@@ -84,10 +84,10 @@ def collect_data(db_handler, url="https://accounts.hcaptcha.com/demo", count=100
         file_paths = [f"{IMAGES_DIR}{captcha_str}/{now}_{i}.png" for i in range(len(captcha_images))]
         image_db_rows = [(file_path.replace((IMAGES_DIR),""), captcha_str, url_str, False, None) for file_path in file_paths]
 
-        threading.Thread(target=save_images_async, args=(captcha_images,file_paths)).start()
+        threading.Thread(target=save_images_async, args=(captcha_str, captcha_images, file_paths)).start()
 
         db_handler.add_images(image_db_rows)
-        print("Added images to db")
+        print(f"{captcha_str:<16}: Added {len(image_db_rows)} rows to db")
 
         i += 1
 
@@ -97,9 +97,10 @@ def collect_data(db_handler, url="https://accounts.hcaptcha.com/demo", count=100
     
 
 
-def save_images_async(captcha_images, file_paths):
+def save_images_async(captcha_str, captcha_images, file_paths):
     for i in range(len(captcha_images)):
         captcha_images[i].save(file_paths[i])
+    print(f"{captcha_str:<16}: Saved {len(captcha_images)} images to disk")
 
 def create_dir_if_not_exists(path):
     if not os.path.exists(path):

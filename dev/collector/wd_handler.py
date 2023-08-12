@@ -84,7 +84,6 @@ class Webdriver_Handler:
 
             print("Captcha V1")
             captcha_str = captcha_strs[0].text
-            print("captcha string:", captcha_str)
 
             image_divs = self.wd.find_elements(By.XPATH, "//div[@class='task-grid']//div[@class='image']")
 
