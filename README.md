@@ -1,6 +1,11 @@
 # hcaptcha-solver
 
-hcaptcha-solver is a lightweight Python library for solving hCaptcha challenges with selenium
+![PyPI - Status](https://img.shields.io/pypi/status/hcaptcha-solver)
+![PyPI](https://img.shields.io/pypi/v/hcaptcha-solver?color=blue&link=https%3A%2F%2Fpypi.org%2Fproject%2Fhcaptcha-solver%2F)
+![PyPI - Downloads](https://img.shields.io/pypi/dm/hcaptcha-solver)
+
+
+a lightweight Python library for solving hCaptcha challenges with selenium and neural networks
 
 ## Installation
 

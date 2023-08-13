@@ -105,6 +105,11 @@ def data_to_loader(x, y, test_split=0.25, batch_size=16):
     dataset = utils.TensorDataset(x_train, y_train)
     test_size = int(len(dataset) * test_split)
     train_size = len(dataset) - test_size
+
+    overhang = train_size % batch_size
+    train_size -= overhang
+    test_size += overhang
+
     print(f"train size: {train_size}, test size: {test_size}")
     train_dataset, test_dataset = torch.utils.data.random_split(dataset, [train_size, test_size])
 
@@ -120,14 +125,8 @@ def train_model_on_captcha_string(db_handler, captcha_string=None, save=True):
     if captcha_string is None:
         captcha_string = db_handler.get_most_solved_captcha_string()
     print(f'Training model on {captcha_string}...')
-    data = db_handler.get_solved_data(captcha_string, 1000)
-    x = np.asarray([np.asarray(PIL.Image.open(open(IMAGES_DIR+path, 'rb'))) for path in data["path"]])
-    x = x / 255 # norming
-    x = np.moveaxis(x, [1,2,3], [2,3,1]) # color channel first
-    # print(x[0])
-    y = data["category"].values.reshape(-1,1)
-    print(f"x shape: {x.shape}")
-    print(f"y shape: {y.shape}")
+    
+    x,y = get_image_data(db_handler, captcha_string)
 
     train_loader, test_loader = data_to_loader(x, y)
 
@@ -153,6 +152,25 @@ def train_models_on_all_captcha_strings(db_handler, threshold=100, save=True):
         train_model_on_captcha_string(db_handler, captcha_string, save=save)
 
     
+def get_image_data(db_handler, captcha_string):
+    data = db_handler.get_solved_data(captcha_string, 1000)
+
+    images_raw = [np.asarray(PIL.Image.open(open(IMAGES_DIR+path, 'rb'))) for path in data["path"]]
+    useable_indexes = [i for i in range(len(images_raw)) if images_raw[i].shape == (128,128,3)]
+
+    useable_images = [images_raw[i] for i in useable_indexes]
+
+    print(f"Fount {len(useable_images)} useable images")
+
+    x = np.asarray(useable_images)
+    x = x / 255 # norming
+    x = np.moveaxis(x, [1,2,3], [2,3,1]) # color channel first
+    # print(x[0])
+    y = data["category"][useable_indexes].values.reshape(-1,1)
+    print(f"x shape: {x.shape}")
+    print(f"y shape: {y.shape}")
+
+    return x, y
 
 def test_model_on_captcha_string(db_handler, captcha_string, model_name=None):
     if model_name is None:
@@ -160,12 +178,7 @@ def test_model_on_captcha_string(db_handler, captcha_string, model_name=None):
     model = Model(f"{MODELS_DIR}{captcha_string}/{model_name}")
 
     print(f'Testing {model_name} on {captcha_string}...')
-    data = db_handler.get_solved_data(captcha_string, 1000)
-    x = np.asarray([np.asarray(PIL.Image.open(open(IMAGES_DIR+path, 'rb'))) for path in data["path"]])
-    x = x / 255 # norming
-    x = np.moveaxis(x, [1,2,3], [2,3,1]) # color channel first
-    # print(x[0])
-    y = data["category"].values.reshape(-1,1)
+    x, y = get_image_data(db_handler, captcha_string)
 
     pred = model.predict(x)
     df = pd.DataFrame({"pred": pred.reshape(-1).astype(int), "y": y.reshape(-1).astype(int)})
