@@ -106,7 +106,6 @@ def collect_data(db_handler, url="https://accounts.hcaptcha.com/demo", count=100
             break
     
 
-
 def save_images_async(captcha_str, captcha_images, file_paths):
     for i in range(len(captcha_images)):
         captcha_images[i].save(file_paths[i])
