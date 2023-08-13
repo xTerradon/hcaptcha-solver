@@ -1,5 +1,5 @@
-import webdriver_handler as wh
-import model_handler as mh
+from . import webdriver_handler as wh
+from . import model_handler as mh
 
 from PIL import Image
 from io import BytesIO

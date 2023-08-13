@@ -1,0 +1,10 @@
+README.md
+pyproject.toml
+src/hcaptcha_solver/__init__.py
+src/hcaptcha_solver/hcaptcha_solver.py
+src/hcaptcha_solver/model_handler.py
+src/hcaptcha_solver/webdriver_handler.py
+src/hcaptcha_solver.egg-info/PKG-INFO
+src/hcaptcha_solver.egg-info/SOURCES.txt
+src/hcaptcha_solver.egg-info/dependency_links.txt
+src/hcaptcha_solver.egg-info/top_level.txt
