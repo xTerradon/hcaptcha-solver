@@ -110,17 +110,10 @@ class Webdriver_Handler:
         if not os.path.exists(f"{IMAGES_DIR_V2}{captcha_string}"):
             os.makedirs(f"{IMAGES_DIR_V2}{captcha_string}")
         path = f"{IMAGES_DIR_V2}{captcha_string}/{now}.png"
-
-        canvas_loc = self.wd.find_element(By.XPATH, "//div[@class='challenge-view']/canvas").location
-        canvas_size = self.wd.find_element(By.XPATH, "//div[@class='challenge-view']/canvas").size
         
-        with PIL.Image.open(BytesIO(self.wd.get_screenshot_as_png())) as img:
-            img = img.crop((
-                self.iframe_location["x"]+canvas_loc["x"], 
-                self.iframe_location["y"]+canvas_loc["y"], 
-                self.iframe_location["x"]+canvas_loc["x"]+canvas_size["width"], 
-                self.iframe_location["y"]+canvas_loc["y"]+canvas_size["height"]))
-            img.save(path)
+        canvas_screenshot = self.wd.find_element(By.XPATH, "//div[@class='challenge-view']/canvas").screenshot_as_png
+
+        PIL.Image.open(BytesIO(canvas_screenshot)).save(path)
 
         print(f"Saved screenshot to {path}")
 

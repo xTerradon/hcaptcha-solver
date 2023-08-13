@@ -33,20 +33,18 @@ def plot_model_accuracy(info, figsize=(4,10)):
     accuracy_columns = [col for col in info.columns if "accuracy" in col]
     best_accuracy = info[accuracy_columns].max(axis=0)
 
-    info = info.sort_values(accuracy_columns[np.argmax(best_accuracy)], ascending=False)
+    info = info.sort_values(accuracy_columns[np.argmax(best_accuracy)], ascending=True)
 
-    ax1.axhline(95, color="red", label="goal", linestyle=":", alpha=0.8)
+    ax1.axvline(95, color="red", label="goal", linestyle=":", alpha=0.8)
 
     if len(accuracy_columns) == 1:
-        ax1.bar(info.index, info[accuracy_columns[0]]*100.0, label=accuracy_columns[0].replace("accuracy","").replace("_",""), color="green", alpha=0.8)
+        ax1.barh(info.index, info[accuracy_columns[0]]*100.0, label=accuracy_columns[0].replace("accuracy","").replace("_",""), color="green", alpha=0.8)
     else:
         for accuracy_column in accuracy_columns:
-            ax1.plot(info.index, info[accuracy_column]*100.0, label=accuracy_column.replace("accuracy","").replace("_",""))
+            ax1.plot(info[accuracy_column]*100.0, info.index, label=accuracy_column.replace("accuracy","").replace("_",""))
 
-    ax1.set_ylim(50,100)
-    ax1.set_ylabel("Labeling Accuracy [%]")
-    ax1.legend()
+    ax1.set_xlim(50,100)
+    ax1.set_xlabel("Labeling Accuracy [%]")
+    ax1.legend(loc="lower left")
 
-
-    ax1.legend(loc="lower right")
-    ax1.set_title("Labeling Accuracy per Captcha Type")
+    ax1.set_title("Labeling Accuracy per Captcha Type (v1)")
