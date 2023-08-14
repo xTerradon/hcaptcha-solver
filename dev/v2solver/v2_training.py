@@ -51,7 +51,7 @@ class Model_Training:
             nn.Linear(265856 , 128),  
             nn.ReLU(),  
             nn.Linear(128, 2),  
-            nn.Tanh()
+            nn.Sigmoid()
         )  
 
         # Initialize weights using Xavier/Glorot initialization

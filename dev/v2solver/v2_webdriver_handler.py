@@ -9,6 +9,15 @@ import os
 from PIL import Image
 from io import BytesIO
 
+def reload_page(wd : webdriver.Chrome):
+    """reloads the current page"""
+
+    assert isinstance(wd, webdriver.Chrome), "webdriver must be a selenium.webdriver.Chrome instance"
+
+    wd.switch_to.default_content()
+    wd.refresh()
+    print("Reloaded page")
+
 def is_captcha_present(wd : webdriver.Chrome):
     """returns True if captcha is present, False otherwise"""
 
@@ -41,10 +50,6 @@ def launch_captcha(wd : webdriver.Chrome, timeout=5):
     WebDriverWait(wd, timeout).until(EC.frame_to_be_available_and_switch_to_it((By.XPATH,"//iframe[contains(@src,'hcaptcha') and contains(@src,'checkbox')]")))
     WebDriverWait(wd, timeout).until(EC.element_to_be_clickable((By.XPATH, "/html/body"))).click() # click on body to launch captcha
     print("Launched hCaptcha")
-
-    wd.switch_to.default_content()
-
-    print("Switched to Captcha")
 
 
 def refresh_all_v2(wd : webdriver.Chrome, timeout=5):
@@ -79,7 +84,13 @@ def refresh_all_v1(wd : webdriver.Chrome, timeout=5):
         time.sleep(0.5)
         refresh_all_v1(wd, timeout)
     else:
-        print("Captcha V2 found")
+        if is_challenge_present(wd):
+            print("Captcha V2 found")
+        else:
+            print("Captcha broke, starting again...")
+            launch_captcha(wd)
+            refresh_all_v1(wd)
+
 
 def refresh_challenge(wd : webdriver.Chrome, timeout=5):
     """refreshes an opened challenge"""
@@ -87,12 +98,8 @@ def refresh_challenge(wd : webdriver.Chrome, timeout=5):
     wd.switch_to.default_content()
     WebDriverWait(wd, timeout).until(EC.frame_to_be_available_and_switch_to_it((By.XPATH,"//iframe[contains(@src,'hcaptcha') and contains(@src,'challenge')]")))
 
-    reference = WebDriverWait(wd, timeout).until(EC.visibility_of_element_located((By.XPATH, "//h2[@class='prompt-text']")))
-
     WebDriverWait(wd, timeout).until(EC.element_to_be_clickable((By.XPATH, "//div[contains(@class, 'refresh button')]"))).click()
 
-    # wait = WebDriverWait(wd, timeout)
-    # wait.until(EC.staleness_of(reference))
 
 def get_challenge_data_v1(wd : webdriver.Chrome, timeout=5):
     """returns the captcha string and the image urls"""
@@ -170,9 +177,63 @@ def click_correct_v2(wd : webdriver.Chrome, x_position, y_position, timeout=5):
     canvas = wd.find_element(By.XPATH, "//div[@class='challenge-view']/canvas")
 
     ac = ActionChains(wd)
-    ac.move_to_element(canvas).move_by_offset(x_position, y_position).click().perform()
+
+    print("clicking on", x_position, y_position)
+    ac.move_to_element_with_offset(canvas, x_position-canvas.size["width"]/2, y_position-canvas.size["height"]/2).click().perform()
+
+    time.sleep(5)
 
     submit_captcha(wd, timeout)
+
+def click_along_borders(wd : webdriver.Chrome, bounding_box, timeout=5):
+
+    wd.switch_to.default_content()
+    WebDriverWait(wd, timeout).until(EC.frame_to_be_available_and_switch_to_it((By.XPATH,"//iframe[contains(@src,'hcaptcha') and contains(@src,'challenge')]")))
+
+    canvas = wd.find_element(By.XPATH, "//div[@class='challenge-view']/canvas")
+    print(canvas.size)
+
+    margin = 10
+    upper_left = (margin + bounding_box[0] - canvas.size["width"]/2, margin + bounding_box[1] - canvas.size["height"]/2)
+    upper_right = (-margin + bounding_box[2] - canvas.size["width"]/2, margin + bounding_box[1] - canvas.size["height"]/2)
+    lower_left = (margin + bounding_box[0] - canvas.size["width"]/2, -margin + bounding_box[3] - canvas.size["height"]/2)
+    lower_right = (-margin + bounding_box[2] - canvas.size["width"]/2, -margin + bounding_box[3] - canvas.size["height"]/2)
+
+    ac = ActionChains(wd)
+    while True:
+        print("ul")
+        ac.move_to_element_with_offset(canvas, upper_left[0], upper_left[1]).click().perform()
+        time.sleep(0.5)
+        ac.move_to_element_with_offset(canvas, upper_left[0]+15, upper_left[1]-15).click().perform()
+        ac.move_to_element_with_offset(canvas, upper_right[0], upper_right[1]).click().perform()
+        time.sleep(0.5)
+        ac.move_to_element_with_offset(canvas, upper_right[0]+15, upper_right[1]-15).click().perform()
+        ac.move_to_element_with_offset(canvas, lower_left[0], lower_left[1]).click().perform()
+        time.sleep(0.5)
+        ac.move_to_element_with_offset(canvas, lower_left[0]+15, lower_left[1]-15).click().perform()
+        ac.move_to_element_with_offset(canvas, lower_right[0], lower_right[1]).click().perform()
+        time.sleep(0.5)
+        ac.move_to_element_with_offset(canvas, lower_right[0]+15, lower_right[1]-15).click().perform()
+
+
+def draw_marker_on_canvas(wd : webdriver.Chrome, x_position, y_position, timeout=5):
+    js_code = '''  
+    function drawClickMarker(canvas, x, y) {  
+        var ctx = canvas.getContext('2d');  
+        ctx.beginPath();  
+        ctx.arc(x, y, 5, 0, 2 * Math.PI, false);  
+        ctx.fillStyle = 'red';  
+        ctx.fill();  
+        ctx.lineWidth = 2;  
+        ctx.strokeStyle = '#003300';  
+        ctx.stroke();  
+    }  
+    drawClickMarker(arguments[0], arguments[1], arguments[2]);  
+    '''  
+    
+    wd.execute_script(js_code, wd.find_element(By.XPATH, "//canvas"), x_position, y_position)
+    print("Marker drawn")
+
 
 def submit_captcha(wd : webdriver.Chrome, timeout=5):
     """submits an open challenge"""

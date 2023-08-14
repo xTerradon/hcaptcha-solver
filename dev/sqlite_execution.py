@@ -241,4 +241,3 @@ class DB_V2:
         image_paths = [IMAGES_DIR_V2+d[0] for d in data]
         positions = [(d[1], d[2]) for d in data]
         return image_paths, positions
-    
