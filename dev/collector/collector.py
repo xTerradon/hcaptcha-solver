@@ -53,6 +53,7 @@ def normalize_captcha_string(captcha_str):
     captcha_str = unidecode(captcha_str)
     captcha_str = captcha_str.replace("Please click each image containing an ","")
     captcha_str = captcha_str.replace("Please click each image containing a ","")
+    captcha_str = captcha_str.replace("Please click each image containing ","")
     captcha_str = captcha_str.replace("Please click on all images containing a ","")
     captcha_str = captcha_str.replace("Please click on all images containing ","")
     return captcha_str

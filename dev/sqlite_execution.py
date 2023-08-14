@@ -89,7 +89,7 @@ class DB_V1:
         total_amounts = self.get_amount_of_images()
         solved_amounts = self.get_amount_of_solved_images()
         unsolved_amounts = self.get_amount_of_unsolved_images()
-        return pd.concat((total_amounts, solved_amounts, unsolved_amounts), axis=1).fillna(0).astype(int).sort_values(by="solved", ascending=False)
+        return pd.concat((total_amounts, solved_amounts, unsolved_amounts), axis=1).fillna(0).astype(int).sort_values(by=["solved","total"], ascending=False)
 
     def get_most_unsolved_captcha_string(self):
         """returns the captcha_string with the most unsolved captchas"""
