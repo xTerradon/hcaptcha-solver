@@ -6,9 +6,10 @@ from pathlib import Path
 import PIL.Image
 
 DATABASES_DIR = "../data/databases/"
-IMAGES_DIR = "../data/images/v1/"
+IMAGES_DIR_V1 = "../data/images/v1/"
+IMAGES_DIR_V2 = "../data/images/v2/"
 
-class Sqlite_Handler:
+class DB_V1:
     def __init__(self, name="captchas"):
         self.con = sqlite3.connect(f"{DATABASES_DIR}/{name}.db", check_same_thread=False)
         self.cur = self.con.cursor()
@@ -150,25 +151,31 @@ class Sqlite_Handler:
 
     def commit(self):
         """commits changes to the database"""
-
+        
         self.con.commit()
 
-    def drop_duplicates(self, commit=True):
-        """drops duplicates in the database"""
+    def remove_nonexisting_images(self, commit=True):
+        """removes images from the database that do not exist anymore"""
 
         all_file_paths = [f[0] for f in self.cur.execute(f"SELECT file_path FROM {self.table_name}").fetchall()]
         print(f"Found {len(all_file_paths)} images in database")
 
         removed = 0
         for file_path in all_file_paths:
-            if not os.path.exists(IMAGES_DIR+file_path):
+            if not os.path.exists(IMAGES_DIR_V1+file_path):
                 self.cur.execute(f"DELETE FROM {self.table_name} WHERE file_path = ?", (file_path,))
                 removed += 1
         print(f"Removed {removed} non-existing images")
+        if commit : self.commit()
+
+    def drop_duplicates(self, commit=True):
+        """drops duplicates in the database"""
+
+        self.remove_nonexisting_images(commit=False)
 
         all_file_paths = [f[0] for f in self.cur.execute(f"SELECT file_path FROM {self.table_name}").fetchall()]
 
-        hashed = [np.asarray(PIL.Image.open(IMAGES_DIR+file_path)).data.tobytes() for file_path in all_file_paths]
+        hashed = [np.asarray(PIL.Image.open(IMAGES_DIR_V1+file_path)).data.tobytes() for file_path in all_file_paths]
         un = np.unique(hashed, return_index=True, return_counts=True)
 
         duplicate_indexes = np.delete(np.arange(len(all_file_paths)),un[1])
@@ -177,8 +184,61 @@ class Sqlite_Handler:
         self.cur.executemany(f"DELETE FROM {self.table_name} WHERE file_path = ?", duplicate_filepaths)
 
         for file_path in duplicate_filepaths:
-            os.remove(IMAGES_DIR+file_path[0])
+            os.remove(IMAGES_DIR_V1+file_path[0])
 
         if commit : self.commit()
 
         print(f"Removed {len(duplicate_filepaths)} duplicates from database")
+
+class DB_V2:
+    def __init__(self, name="captchas", dir_prefix=""):
+        self.con = sqlite3.connect(f"{dir_prefix}{DATABASES_DIR}/{name}.db", check_same_thread=False)
+        self.cur = self.con.cursor()
+        self.table_name = self.create_captchas_table()
+
+    def create_captchas_table(self, table_name="captchas_v2"):
+        """creates a table for captchas if it does not yet exist"""
+
+        self.cur.execute(f"""CREATE TABLE IF NOT EXISTS {table_name}(
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                file_path TEXT NOT NULL,
+                source_url TEXT NOT NULL,
+                position_x INTEGER NOT NULL,
+                position_y INTEGER NOT NULL)""")
+        return table_name
+
+    def commit(self):
+        """commits changes to the database"""
+        
+        self.con.commit()
+
+    def add_captcha(self, file_path, source_url, position_x, position_y, commit=True):
+        """adds a captcha to the database"""
+
+        self.cur.execute(f"INSERT INTO {self.table_name}(file_path, source_url, position_x, position_y) VALUES(?,?,?,?)",(file_path, source_url, position_x, position_y))
+
+        if commit : self.commit()
+    
+    def remove_nonexisting_images(self, commit=True):
+        """removes images from the database that do not exist anymore"""
+
+        all_file_paths = [f[0] for f in self.cur.execute(f"SELECT file_path FROM {self.table_name}").fetchall()]
+        print(f"Found {len(all_file_paths)} images in database")
+
+        removed = 0
+        for file_path in all_file_paths:
+            if not os.path.exists(IMAGES_DIR_V2+file_path):
+                self.cur.execute(f"DELETE FROM {self.table_name} WHERE file_path = ?", (file_path,))
+                removed += 1
+        print(f"Removed {removed} non-existing images")
+
+        if commit : self.commit()
+
+    def get_captchas(self, count=10):
+        """returns a list of captchas from the database"""
+
+        data = self.cur.execute(f"SELECT file_path, position_x, position_y FROM {self.table_name} LIMIT {count}").fetchall()
+        image_paths = [IMAGES_DIR_V2+d[0] for d in data]
+        positions = [(d[1], d[2]) for d in data]
+        return image_paths, positions
+    

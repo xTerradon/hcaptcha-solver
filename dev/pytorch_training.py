@@ -39,6 +39,11 @@ class Training:
             nn.Sigmoid()  
         )  
 
+        # Initialize weights using Xavier/Glorot initialization
+        for layer in self.model:
+            if isinstance(layer, nn.Linear):
+                init.xavier_uniform_(layer.weight)
+
         self.optimizer = optim.Adam(self.model.parameters(), lr=self.lr)
         self.criterion = nn.BCELoss()
 

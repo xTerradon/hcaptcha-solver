@@ -76,7 +76,7 @@ class Webdriver_Handler:
                     captcha_string = captcha_string.replace("Please click on the ","").replace(" ","_")
                     
                     if captcha_string != "":
-                        self.make_screenshot_of_canvas(captcha_string)
+                        self.save_screenshot_of_canvas(captcha_string)
                     else:
                         print("No captcha string found, refreshing")
                     
@@ -105,7 +105,7 @@ class Webdriver_Handler:
             self.load_captcha()
             return self.get_all_and_skip()
     
-    def make_screenshot_of_canvas(self, captcha_string):
+    def save_screenshot_of_canvas(self, captcha_string):
         now = dt.now().strftime("%d-%H-%M-%S-%f")
         if not os.path.exists(f"{IMAGES_DIR_V2}{captcha_string}"):
             os.makedirs(f"{IMAGES_DIR_V2}{captcha_string}")
