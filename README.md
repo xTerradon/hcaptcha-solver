@@ -10,7 +10,7 @@ a lightweight Python library for solving hCaptcha challenges with selenium and n
 ## Installation
 
 ```bash
-pip install --index-url https://test.pypi.org/simple/ hcaptcha-solver
+pip install hcaptcha-solver
 ```
 
 ## Usage
