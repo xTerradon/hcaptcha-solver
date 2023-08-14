@@ -192,6 +192,7 @@ class DB_V1:
 
 class DB_V2:
     def __init__(self, name="captchas", dir_prefix=""):
+        self.dir_prefix = dir_prefix
         self.con = sqlite3.connect(f"{dir_prefix}{DATABASES_DIR}/{name}.db", check_same_thread=False)
         self.cur = self.con.cursor()
         self.table_name = self.create_captchas_table()
@@ -201,10 +202,12 @@ class DB_V2:
 
         self.cur.execute(f"""CREATE TABLE IF NOT EXISTS {table_name}(
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
+                captcha_string TEXT NOT NULL,
                 file_path TEXT NOT NULL,
                 source_url TEXT NOT NULL,
-                position_x INTEGER NOT NULL,
-                position_y INTEGER NOT NULL)""")
+                solved BOOLEAN NOT NULL,
+                position_x INTEGER,
+                position_y INTEGER)""")
         return table_name
 
     def commit(self):
@@ -212,12 +215,13 @@ class DB_V2:
         
         self.con.commit()
 
-    def add_captcha(self, file_path, source_url, position_x, position_y, commit=True):
+    def add_image(self, file_path, captcha_string, source_url, commit=True):
         """adds a captcha to the database"""
 
-        self.cur.execute(f"INSERT INTO {self.table_name}(file_path, source_url, position_x, position_y) VALUES(?,?,?,?)",(file_path, source_url, position_x, position_y))
+        self.cur.execute(f"INSERT INTO {self.table_name}(captcha_string, file_path, source_url, solved) VALUES(?,?,?,?)",(captcha_string, file_path, source_url, False))
 
         if commit : self.commit()
+    
     
     def remove_nonexisting_images(self, commit=True):
         """removes images from the database that do not exist anymore"""
@@ -234,10 +238,47 @@ class DB_V2:
 
         if commit : self.commit()
 
-    def get_captchas(self, count=10):
+    def get_solved_captchas(self, count=10, captcha_string=None):
         """returns a list of captchas from the database"""
 
-        data = self.cur.execute(f"SELECT file_path, position_x, position_y FROM {self.table_name} LIMIT {count}").fetchall()
+        if captcha_string is None:
+            data = self.cur.execute(f"SELECT file_path, position_x, position_y FROM {self.table_name} WHERE solved = True LIMIT {count}").fetchall()
+        else:
+            data = self.cur.execute(f"SELECT file_path, position_x, position_y FROM {self.table_name} WHERE solved = True AND captcha_string = {captcha_string} LIMIT {count}").fetchall()
+
         image_paths = [IMAGES_DIR_V2+d[0] for d in data]
         positions = [(d[1], d[2]) for d in data]
         return image_paths, positions
+
+    def get_unsolved_captchas(self, count=10, captcha_string=None):
+        """returns a list of unsolved captchas from the database"""
+
+        if captcha_string is None:
+            data = self.cur.execute(f"SELECT file_path FROM {self.table_name} WHERE solved = False LIMIT {count}").fetchall()
+        else:
+            data = self.cur.execute(f"SELECT file_path FROM {self.table_name} WHERE solved = False AND captcha_string = {captcha_string} LIMIT {count}").fetchall()
+
+        image_paths = [IMAGES_DIR_V2+d[0] for d in data]
+        return image_paths
+    
+
+    def add_position(self, file_path, position_x, position_y, commit=True):
+        """adds a position to a captcha in the database"""
+
+        self.cur.execute(f"UPDATE {self.table_name} SET solved = ?, position_x = ?, position_y = ? WHERE file_path = ?", (True, int(position_x), int(position_y), file_path))
+
+        if commit : self.commit()
+
+    def add_untracked_images(self, captcha_string):
+        """adds existing images as unsolved captchas to the database"""
+
+        all_file_paths = [f[0] for f in self.cur.execute(f"SELECT file_path FROM {self.table_name}").fetchall()]
+
+        added = 0
+        for file_path in os.listdir(self.dir_prefix + IMAGES_DIR_V2 + "/" + captcha_string): # this is terrible pathing
+            if captcha_string + "/" + file_path not in all_file_paths:
+                added += 1
+                self.add_image(captcha_string + "/" + file_path, captcha_string, "unknown", commit=False)
+        print(f"Added {added} untracked images")
+
+        self.commit() 

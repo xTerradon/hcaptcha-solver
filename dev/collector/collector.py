@@ -54,6 +54,7 @@ def normalize_captcha_string(captcha_str):
     captcha_str = captcha_str.replace("Please click each image containing an ","")
     captcha_str = captcha_str.replace("Please click each image containing a ","")
     captcha_str = captcha_str.replace("Please click on all images containing a ","")
+    captcha_str = captcha_str.replace("Please click on all images containing ","")
     return captcha_str
 
 def collect_data(db_handler, url="https://accounts.hcaptcha.com/demo", count=100, collect_v2=False, limit=2000):

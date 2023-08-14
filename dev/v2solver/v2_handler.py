@@ -85,4 +85,5 @@ class V2_Handler:
         full_file_path = f"..\\..\\{IMAGES_DIR_V2}{relative_file_path}"
 
         image.save(full_file_path)
-        self.db2.add_captcha(relative_file_path, current_url, locations[0], locations[1])
+        self.db2.add_image(relative_file_path, current_url)
+        self.db2.add_position(relative_file_path, locations[0], locations[1])
