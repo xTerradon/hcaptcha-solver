@@ -85,9 +85,10 @@ class Training:
             else:
                 early_stopping_counter = 0
                 best_model = copy(self.model)
+                best_accuracy = correct / test_len
 
         self.model = best_model
-        return self.model
+        return self.model, best_accuracy
 
 class Model:
     def __init__(self, model_path):
@@ -127,17 +128,17 @@ def data_to_loader(x, y, test_split=0.25, batch_size=16):
     return train_loader, test_loader
 
 
-def train_model_on_captcha_string(db_handler, captcha_string=None, save=True):
+def train_model_on_captcha_string(db1, captcha_string=None, save=True, epochs=50):
     if captcha_string is None:
-        captcha_string = db_handler.get_most_solved_captcha_string()
+        captcha_string = db1.get_most_solved_captcha_string()
     print(f'Training model on {captcha_string}...')
     
-    x,y = get_image_data(db_handler, captcha_string)
+    x,y = get_image_data(db1, captcha_string)
 
     train_loader, test_loader = data_to_loader(x, y)
 
     training = Training()
-    model = training.train(train_loader, test_loader)
+    model, accuracy = training.train(train_loader, test_loader, epochs=epochs)
 
     if save:
         now = dt.now().strftime("%y-%j")
@@ -147,15 +148,17 @@ def train_model_on_captcha_string(db_handler, captcha_string=None, save=True):
         else:
             i = len([a for a in os.listdir(f"{MODELS_DIR}{captcha_string}") if now in a]) + 1
         path = f"{MODELS_DIR}{captcha_string}/{now}_{str(i).zfill(2)}"
+
+        db1.add_model(f"{captcha_string}/{now}_{str(i).zfill(2)}", captcha_string, len(train_loader.dataset), len(test_loader.dataset), accuracy)
         torch.save(model, path)
         print(f"Saved model to {path}")
 
-def train_models_on_all_captcha_strings(db_handler, threshold=100, save=True):
-    info = db_handler.get_info()
+def train_models_on_all_captcha_strings(db1, threshold=100, save=True, epochs=50):
+    info = db1.get_info()
     info = info[info["solved"] >= threshold]
     captcha_strings = info.index.values
     for captcha_string in captcha_strings:
-        train_model_on_captcha_string(db_handler, captcha_string, save=save)
+        train_model_on_captcha_string(db1, captcha_string, save=save, epochs=epochs)
 
     
 def get_image_data(db_handler, captcha_string):
