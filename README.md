@@ -23,7 +23,9 @@ from selenium import webdriver
 captcha_solver = hcaptcha_solver.Captcha_Solver()
 
 # create webdriver and access website with hCaptcha
-driver = webdriver.Chrome()
+options = webdriver.ChromeOptions()
+options.add_experimental_option('prefs', {'intl.accept_languages': 'en,en_US'}) # set to english
+driver = webdriver.Chrome(options=options)
 driver.get("https://accounts.hcaptcha.com/demo")
 
 # check for hCaptcha
@@ -38,8 +40,9 @@ captcha_solver.solve_captcha(driver)
 
 Only v1 hCaptchas are supported - any other captcha types will be skipped.
 The correct images are selected using Convolutional Neural Networks trained on labeled hCaptcha data.
+The models are chosen by inspecting the captcha header, so the language has to be english in order for the matching to work.
 
-The package features models for a handful of hCaptcha tasks. The currently available models and their labeling accuraciesare visualized in the figure below. Note that the accuracy was measured on training data and is therefore inflated.
+The package features models for a handful of hCaptcha tasks. The currently available models and their labeling accuracies are visualized in the figure below. Note that the accuracy was measured on training data and is therefore inflated.
 
 The model availability and performance will be improved over time.
 
