@@ -40,7 +40,7 @@ class Captcha_Solver:
             wh.launch_captcha(wd)
 
         wh.refresh_all_v2(wd)
-        self.solve_challenge(wd)
+        return self.solve_challenge(wd)
 
 
     def solve_challenge(self, wd, debug=False):
@@ -55,7 +55,8 @@ class Captcha_Solver:
             captcha_instructions, captcha_urls = wh.get_challenge_data(wd)
         except Exception as e:
             print("Failed to get challenge data, trying again...")
-            self.solve_captcha(wd)
+            return self.solve_captcha(wd)
+            
         
         captcha_str = normalize_captcha_string(captcha_instructions)
         print(f"Found Captcha task: {captcha_str}")
