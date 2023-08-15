@@ -1,1 +1,1 @@
-include hcaptcha_solver/model_data/*
+include src/hcaptcha_solver/models/*

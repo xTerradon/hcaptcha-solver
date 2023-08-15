@@ -13,11 +13,14 @@ def is_captcha_present(wd : webdriver.Chrome):
     assert isinstance(wd, webdriver.Chrome), "webdriver must be a selenium.webdriver.Chrome instance"
     
     wd.switch_to.default_content()
-    wd.switch_to.default_content()
+
+    if len(wd.find_elements(By.XPATH,"//iframe[contains(@src,'hcaptcha') and contains(@src,'checkbox')]")) == 0:
+        return False
+    
     if wd.find_element(By.XPATH,"//iframe[contains(@src,'hcaptcha') and contains(@src,'checkbox')]").is_displayed():
         return True
     else:
-        return Falsee
+        return False
 
 def is_challenge_present(wd : webdriver.Chrome):
     """returns True if challenge is present, False otherwise"""
@@ -25,6 +28,10 @@ def is_challenge_present(wd : webdriver.Chrome):
     assert isinstance(wd, webdriver.Chrome), "webdriver must be a selenium.webdriver.Chrome instance"
 
     wd.switch_to.default_content()
+
+    if len(wd.find_elements(By.XPATH,"//iframe[contains(@src,'hcaptcha') and contains(@src,'challenge')]")) == 0:
+        return False
+    
     if wd.find_element(By.XPATH,"//iframe[contains(@src,'hcaptcha') and contains(@src,'challenge')]").is_displayed():
         return True
     else:
@@ -35,14 +42,15 @@ def launch_captcha(wd : webdriver.Chrome, timeout=5):
 
     assert isinstance(wd, webdriver.Chrome), "webdriver must be a selenium.webdriver.Chrome instance"
 
+    if not is_captcha_present(wd):
+        print("No hCaptcha challenge present")
+        return
+    
     wd.switch_to.default_content()
+
     WebDriverWait(wd, timeout).until(EC.frame_to_be_available_and_switch_to_it((By.XPATH,"//iframe[contains(@src,'hcaptcha') and contains(@src,'checkbox')]")))
     WebDriverWait(wd, timeout).until(EC.element_to_be_clickable((By.XPATH, "/html/body"))).click() # click on body to launch captcha
     print("Launched hCaptcha")
-
-    wd.switch_to.default_content()
-
-    print("Switched to Captcha")
 
 
 def refresh_all_v2(wd : webdriver.Chrome, timeout=5):
@@ -52,6 +60,9 @@ def refresh_all_v2(wd : webdriver.Chrome, timeout=5):
 
     wd.switch_to.default_content()
     WebDriverWait(wd, timeout).until(EC.frame_to_be_available_and_switch_to_it((By.XPATH,"//iframe[contains(@src,'hcaptcha') and contains(@src,'challenge')]")))
+    
+    while wd.find_elements(By.XPATH, "//h2[@class='prompt-text']") == []:
+        time.sleep(0.1)
 
     captcha_strs = wd.find_elements(By.XPATH, "//h2[@class='prompt-text']/span") # this span is only present in captcha v1
     if captcha_strs == []:
@@ -68,12 +79,9 @@ def refresh_challenge(wd : webdriver.Chrome, timeout=5):
     wd.switch_to.default_content()
     WebDriverWait(wd, timeout).until(EC.frame_to_be_available_and_switch_to_it((By.XPATH,"//iframe[contains(@src,'hcaptcha') and contains(@src,'challenge')]")))
 
-    reference = WebDriverWait(wd, timeout).until(EC.visibility_of_element_located((By.XPATH, "//h2[@class='prompt-text']")))
-
     WebDriverWait(wd, timeout).until(EC.element_to_be_clickable((By.XPATH, "//div[contains(@class, 'refresh button')]"))).click()
 
-    # wait = WebDriverWait(wd, timeout)
-    # wait.until(EC.staleness_of(reference))
+    time.sleep(1)
 
 def get_challenge_data(wd : webdriver.Chrome, timeout=5):
     """returns the captcha string and the image urls"""

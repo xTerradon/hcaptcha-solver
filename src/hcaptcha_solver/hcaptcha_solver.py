@@ -55,16 +55,16 @@ class Captcha_Solver:
             captcha_instructions, captcha_urls = wh.get_challenge_data(wd)
         except Exception as e:
             print("Failed to get challenge data, trying again...")
+            wh.refresh_challenge(wd)
             return self.solve_captcha(wd)
             
-        
         captcha_str = normalize_captcha_string(captcha_instructions)
         print(f"Found Captcha task: {captcha_str}")
 
         if captcha_str not in list(self.models.models.keys()):
             print(f"Model for captcha string {captcha_str} not found, trying again...")
             wh.refresh_challenge(wd)
-            self.solve_captcha(wd)
+            return self.solve_captcha(wd)
 
         with Session() as s:
             captcha_images = [Image.open(BytesIO(s.get(captcha_url).content)) for captcha_url in captcha_urls]
@@ -85,7 +85,6 @@ class Captcha_Solver:
         else:
             print("Captcha solved successfully")
             return True
-
 
 
 def normalize_captcha_string(captcha_str):
@@ -117,4 +116,7 @@ def normalize_captcha_string(captcha_str):
     captcha_str = unidecode(captcha_str)
     captcha_str = captcha_str.replace("Please click each image containing an ","")
     captcha_str = captcha_str.replace("Please click each image containing a ","")
+    captcha_str = captcha_str.replace("Please click each image containing ","")
+    captcha_str = captcha_str.replace("Please click on all images containing a ","")
+    captcha_str = captcha_str.replace("Please click on all images containing ","")
     return captcha_str

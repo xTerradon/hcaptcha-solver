@@ -1,3 +1,4 @@
+MANIFEST.in
 README.md
 pyproject.toml
 src/hcaptcha_solver/__init__.py
@@ -8,3 +9,13 @@ src/hcaptcha_solver.egg-info/PKG-INFO
 src/hcaptcha_solver.egg-info/SOURCES.txt
 src/hcaptcha_solver.egg-info/dependency_links.txt
 src/hcaptcha_solver.egg-info/top_level.txt
+src/hcaptcha_solver/models/bonsai tree
+src/hcaptcha_solver/models/car
+src/hcaptcha_solver/models/cup of orange juice
+src/hcaptcha_solver/models/flower
+src/hcaptcha_solver/models/headphones
+src/hcaptcha_solver/models/helicopter
+src/hcaptcha_solver/models/laptop
+src/hcaptcha_solver/models/motorcycle
+src/hcaptcha_solver/models/tree
+src/hcaptcha_solver/models/violin

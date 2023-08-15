@@ -5,15 +5,20 @@ import os
 from pathlib import Path
 import PIL.Image
 from scipy.stats import binom
+import shutil
+
 
 
 DATABASES_DIR = "../data/databases/"
 IMAGES_DIR_V1 = "../data/images/v1/"
 IMAGES_DIR_V2 = "../data/images/v2/"
+MODEL_DIR_V1 = "../data/models/"
+MODEL_DIR_SRC = "../src/hcaptcha_solver/models/"
 
 class DB_V1:
-    def __init__(self, name="captchas"):
-        self.con = sqlite3.connect(f"{DATABASES_DIR}/{name}.db", check_same_thread=False)
+    def __init__(self, name="captchas", dir_prefix=""):
+        self.dir_prefix = dir_prefix
+        self.con = sqlite3.connect(f"{dir_prefix}{DATABASES_DIR}/{name}.db", check_same_thread=False)
         self.cur = self.con.cursor()
         self.captchas_table_name = self.create_captchas_table()
         self.models_table_name = self.create_models_table()
@@ -64,6 +69,15 @@ class DB_V1:
         data.rename_axis(None, inplace=True)
         data.date = pd.to_datetime(data.date).dt.date
         return data
+    
+    def load_models_into_src(self, threshold=0.9):
+        model_info = self.get_model_info()
+        model_info = model_info[model_info.accuracy > threshold]
+        for captcha_string, path in list(zip(model_info.index, model_info.path)):
+            print(captcha_string, path)
+            destination_file = f'{MODEL_DIR_SRC}/{captcha_string}'
+            shutil.copy(MODEL_DIR_V1 + path, destination_file)
+            print(f'File copied and renamed to: {destination_file}')
 
     def add_image(self, file_path, captcha_string, source_url, solved=False, category=None, commit=True):
         """adds an image to the database"""
