@@ -43,14 +43,12 @@ def launch_captcha(wd : webdriver.Chrome, timeout=5):
     assert isinstance(wd, webdriver.Chrome), "webdriver must be a selenium.webdriver.Chrome instance"
 
     if not is_captcha_present(wd):
-        print("No hCaptcha challenge present")
-        return
+        raise Exception("No hCaptcha challenge box present")
     
     wd.switch_to.default_content()
 
     WebDriverWait(wd, timeout).until(EC.frame_to_be_available_and_switch_to_it((By.XPATH,"//iframe[contains(@src,'hcaptcha') and contains(@src,'checkbox')]")))
     WebDriverWait(wd, timeout).until(EC.element_to_be_clickable((By.XPATH, "/html/body"))).click() # click on body to launch captcha
-    print("Launched hCaptcha")
 
 
 def refresh_all_v2(wd : webdriver.Chrome, timeout=5):
@@ -66,12 +64,9 @@ def refresh_all_v2(wd : webdriver.Chrome, timeout=5):
 
     captcha_strs = wd.find_elements(By.XPATH, "//h2[@class='prompt-text']/span") # this span is only present in captcha v1
     if captcha_strs == []:
-        print("Captcha V2 found, refreshing")
         refresh_challenge(wd, timeout)
         time.sleep(0.5)
         refresh_all_v2(wd, timeout)
-    else:
-        print("Captcha V1 found")
 
 def refresh_challenge(wd : webdriver.Chrome, timeout=5):
     """refreshes an opened challenge"""
@@ -81,7 +76,7 @@ def refresh_challenge(wd : webdriver.Chrome, timeout=5):
 
     WebDriverWait(wd, timeout).until(EC.element_to_be_clickable((By.XPATH, "//div[contains(@class, 'refresh button')]"))).click()
 
-    time.sleep(1)
+    time.sleep(2) # this is not clean, but I don't know how to check if the challenge is refreshed
 
 def get_challenge_data(wd : webdriver.Chrome, timeout=5):
     """returns the captcha string and the image urls"""
@@ -100,8 +95,6 @@ def get_challenge_data(wd : webdriver.Chrome, timeout=5):
 
     urls = [image_style_str.split("url(\"")[1].split("\") ")[0] for image_style_str in image_style_strs]
 
-    print("Got Captcha data")
-
     return captcha_str, urls
 
 def abort(wd : webdriver.Chrome):
@@ -111,7 +104,6 @@ def abort(wd : webdriver.Chrome):
 
     wd.switch_to.default_content()
     WebDriverWait(wd, 5).until(EC.element_to_be_clickable((By.XPATH, "/html/body"))).click()
-    print("Aborted Captcha")
 
 
 def click_correct(wd : webdriver.Chrome, is_correct : list, timeout=5):
@@ -133,8 +125,6 @@ def click_correct(wd : webdriver.Chrome, is_correct : list, timeout=5):
             time.sleep(0.5)
 
     WebDriverWait(wd, timeout).until(EC.element_to_be_clickable((By.XPATH, "//div[contains(@class, 'submit button')]"))).click()
-
-    print("Submitted captcha")
 
 
 def is_captcha_solved(wd : webdriver.Chrome, timeout=5):

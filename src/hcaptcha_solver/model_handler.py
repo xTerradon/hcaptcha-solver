@@ -21,28 +21,29 @@ class Model:
             
     
 class Model_Handler:
-    def __init__(self):
-        print("Initializing model handler...")
+    def __init__(self, verbose=True):
+        self.verbose = verbose
         self.models = {}
+
+        if verbose : print("Initializing model handler...")
         for model_name in os.listdir(MODELS_DIR):
             try:
                 self.models[model_name] = Model(model_name)
             except Exception as e:
-                print(f"Failed to load model {model_name}")
-                print(e)
-        print(f"Loaded {len(self.models)} models")
+                if self.verbose : print(f"Failed to load model {model_name}"); print(e)
+        if self.verbose : print(f"Loaded {len(self.models)} models")
     
     def get_labels(self, captcha_string : str, pil_images : list):
-        print(f"Predicting {len(pil_images)} images...")
+        if self.verbose : print(f"Predicting {len(pil_images)} images...")
 
         x = self.preprocess_pil_images(pil_images)
         y = list(self.models[captcha_string].predict(x))
 
-        print(f"Predictions: {y}")
+        if self.verbose : print(f"Predictions: {y}")
 
         is_correct = [prediction > 0.5 for prediction in y]
 
-        print(f"Correct Images: {is_correct}")
+        if self.verbose : print(f"Correct Images: {is_correct}")
 
         return is_correct
 

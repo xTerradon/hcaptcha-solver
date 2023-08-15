@@ -2,7 +2,7 @@ from hcaptcha_solver import hcaptcha_solver
 from selenium import webdriver
 
 # create Captcha_Solver object to load ML models
-captcha_solver = hcaptcha_solver.Captcha_Solver()
+captcha_solver = hcaptcha_solver.Captcha_Solver(verbose=True)
 
 # create webdriver and access website with hCaptcha
 options = webdriver.ChromeOptions()

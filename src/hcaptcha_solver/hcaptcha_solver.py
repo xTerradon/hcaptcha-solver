@@ -11,8 +11,10 @@ from matplotlib import pyplot as plt
 import time
 
 class Captcha_Solver:
-    def __init__(self):
-        self.models = mh.Model_Handler()
+    def __init__(self, verbose=True):
+        self.verbose = verbose
+        if self.verbose : print("Captcha_Solver is starting in verbose mode by default. To silence messages, pass verbose=False to constructor")
+        self.models = mh.Model_Handler(verbose=self.verbose)
 
     def is_captcha_present(self, wd):
         """
@@ -36,10 +38,11 @@ class Captcha_Solver:
         """
 
         if not wh.is_challenge_present(wd):
-            print("Launching hCaptcha...")
+            if self.verbose : print("Launching hCaptcha...")
             wh.launch_captcha(wd)
 
         wh.refresh_all_v2(wd)
+        if self.verbose : print("Found V1 Captcha")
         return self.solve_challenge(wd)
 
 
@@ -51,44 +54,62 @@ class Captcha_Solver:
         :type driver: WebDriver
         """
 
+        if not wh.is_challenge_present(wd):
+            raise Exception("No active hCaptcha challenge present. Try using solve_captcha() instead")
+
         try:
             captcha_instructions, captcha_urls = wh.get_challenge_data(wd)
         except Exception as e:
-            print("Failed to get challenge data, trying again...")
+            if self.verbose : print("Failed to get challenge data, trying again..."); print(e)
             wh.refresh_challenge(wd)
             return self.solve_captcha(wd)
             
         captcha_str = normalize_captcha_string(captcha_instructions)
-        print(f"Found Captcha task: {captcha_str}")
+        if self.verbose : print(f"Found Captcha task: {captcha_str}")
 
         if captcha_str not in list(self.models.models.keys()):
-            print(f"Model for captcha string {captcha_str} not found, trying again...")
+            if self.verbose : print(f"Model for captcha string {captcha_str} not found, trying again...")
             wh.refresh_challenge(wd)
             return self.solve_captcha(wd)
+        
+        if self.verbose : print("Found model for captcha string")
 
         with Session() as s:
             captcha_images = [Image.open(BytesIO(s.get(captcha_url).content)) for captcha_url in captcha_urls]
 
-        # plt.axis('off')
-        # [plt.subplot(3, 3, i + 1).imshow(img) for i, img in enumerate(captcha_images)]
-        # plt.show()
+        try:
+            image_labels = self.models.get_labels(captcha_str, captcha_images)
+        except Exception as e:
+            if self.verbose : print("Failed to get image labels, trying again..."); print(e)
+            wh.refresh_challenge(wd)
+            return self.solve_captcha(wd)
 
-        image_labels = self.models.get_labels(captcha_str, captcha_images)
+        try:
+            wh.click_correct(wd, image_labels)
+        except Exception as e:
+            if self.verbose : print("Failed to click correct images, trying again..."); print(e)
+            wh.refresh_challenge(wd)
+            return self.solve_captcha(wd)
 
-        wh.click_correct(wd, image_labels)
+        if self.verbose : print("Clicked correct images")
 
-        time.sleep(1.0)
+        time.sleep(3)
 
         if not wh.is_captcha_solved(wd):
-            print("Captcha solving failed, trying again...")
+            if self.verbose : print("Captcha solving failed, trying again...")
             self.solve_challenge(wd)
         else:
-            print("Captcha solved successfully")
+            if self.verbose : print("Captcha solved successfully")
             return True
 
 
 def normalize_captcha_string(captcha_str):
     """normalizes the captcha string"""
+
+    if "Please click" not in captcha_str:
+        print("""[WARNING] The captcha string does not appear to be english. \
+        This version of hcaptcha-solver only supports english captchas, \
+        consider changing the language of the webhandler""")
 
     captcha_str = captcha_str.replace("\u0441","c")
     captcha_str = captcha_str.replace("\u043e","o")
