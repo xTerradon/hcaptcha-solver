@@ -10,6 +10,7 @@ import v2_webdriver_handler as wh
 
 import time
 from datetime import datetime as dt
+from PIL import Image, ImageDraw
 
 
 IMAGES_DIR_V2 = "data\\images\\v2\\"
@@ -87,3 +88,19 @@ class V2_Handler:
         image.save(full_file_path)
         self.db2.add_image(relative_file_path, current_url)
         self.db2.add_position(relative_file_path, locations[0], locations[1])
+
+
+def display_image_with_circle(image_pil, position):
+    image_cropped = image_pil.crop(CLICKABLE_AREA_BOUNDARIES)
+    draw = ImageDraw.Draw(image_cropped)
+    radius = 40
+    draw.ellipse(
+        (
+            position[0]-radius, 
+            position[1]-radius,
+            position[0]+radius,
+            position[1]+radius
+        ), 
+        outline="red", 
+        width=3)
+    display(image_cropped)

@@ -123,7 +123,7 @@ class DB_V1:
         return pd.Series([unsolved_amount[1] for unsolved_amount in unsolved_amounts], index=[unsolved_amount[0] for unsolved_amount in unsolved_amounts], name="unsolved", dtype=int)
 
     def get_solved_unsolved_for_captcha_string(self, captcha_string):
-        """retuns the amount of solvede and unsolved captchas for a given captcha string"""
+        """retuns the amount of solved and unsolved captchas for a given captcha string"""
 
         solved_unsolved = self.cur.execute(f"SELECT COUNT(*), solved FROM {self.captchas_table_name} WHERE captcha_string = ? GROUP BY solved ORDER BY solved", (captcha_string,)).fetchall()
         if len(solved_unsolved) == 1:
@@ -257,6 +257,8 @@ class DB_V1:
         if commit : self.commit()
 
 
+
+
 class DB_V2:
     def __init__(self, name="captchas", dir_prefix=""):
         self.dir_prefix = dir_prefix
@@ -305,6 +307,12 @@ class DB_V2:
 
         if commit : self.commit()
 
+    def get_captcha_strings(self):
+        """returns list of captcha strings"""
+
+        return [a[0] for a in self.cur.execute(f"SELECT DISTINCT captcha_string FROM {self.captchas_table_name}").fetchall()]
+        
+
     def get_solved_captchas(self, count=10, captcha_string=None):
         """returns a list of captchas from the database"""
 
@@ -313,7 +321,7 @@ class DB_V2:
         else:
             data = self.cur.execute(f"SELECT file_path, position_x, position_y FROM {self.captchas_table_name} WHERE solved = True AND captcha_string = {captcha_string} LIMIT {count}").fetchall()
 
-        image_paths = [IMAGES_DIR_V2+d[0] for d in data]
+        image_paths = [d[0] for d in data]
         positions = [(d[1], d[2]) for d in data]
         return image_paths, positions
 
@@ -323,9 +331,9 @@ class DB_V2:
         if captcha_string is None:
             data = self.cur.execute(f"SELECT file_path FROM {self.captchas_table_name} WHERE solved = False LIMIT {count}").fetchall()
         else:
-            data = self.cur.execute(f"SELECT file_path FROM {self.captchas_table_name} WHERE solved = False AND captcha_string = {captcha_string} LIMIT {count}").fetchall()
+            data = self.cur.execute(f"SELECT file_path FROM {self.captchas_table_name} WHERE solved = False AND captcha_string = '{captcha_string}' LIMIT {count}").fetchall()
 
-        image_paths = [IMAGES_DIR_V2+d[0] for d in data]
+        image_paths = [d[0] for d in data]
         return image_paths
     
 
@@ -333,6 +341,13 @@ class DB_V2:
         """adds a position to a captcha in the database"""
 
         self.cur.execute(f"UPDATE {self.captchas_table_name} SET solved = ?, position_x = ?, position_y = ? WHERE file_path = ?", (True, int(position_x), int(position_y), file_path))
+
+        if commit : self.commit()
+
+    def remove_postion(self, file_path, commit=True):
+        """removes a position from a captcha in the database"""
+
+        self.cur.execute(f"UPDATE {self.captchas_table_name} SET solved = ?, position_x = ?, position_y = ? WHERE file_path = ?", (False, None, None, file_path))
 
         if commit : self.commit()
 
@@ -349,3 +364,15 @@ class DB_V2:
         print(f"Added {added} untracked images")
 
         self.commit() 
+
+    def get_solved_unsolved_for_captcha_string(self, captcha_string):
+        """retuns the amount of solvede and unsolved captchas for a given captcha string"""
+
+        solved_unsolved = self.cur.execute(f"SELECT COUNT(*), solved FROM {self.captchas_table_name} WHERE captcha_string = ? GROUP BY solved ORDER BY solved", (captcha_string,)).fetchall()
+        if len(solved_unsolved) == 1:
+            # either only solved or unsolved
+            if solved_unsolved[0][1] == 1:
+                return pd.Series([0, solved_unsolved[0][0]], index=["unsolved", "solved"], name=captcha_string, dtype=int)
+            else:
+                return pd.Series([solved_unsolved[0][0], 0], index=["unsolved", "solved"], name=captcha_string, dtype=int)
+        return pd.Series([solved_unsolved[0][0], solved_unsolved[1][0]], index=["unsolved", "solved"], name=captcha_string, dtype=int)
