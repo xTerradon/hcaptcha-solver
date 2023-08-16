@@ -63,7 +63,7 @@ class DB_V1:
         """returns a df with the most accurate models for each captcha_string"""
 
         data = pd.DataFrame(
-            self.cur.execute("""SELECT captcha_string, date, model_path, training_samples, testing_samples, MAX(accuracy) as accuracy, better_than_90, better_than_95 FROM models_v1 GROUP BY captcha_string ORDER BY accuracy DESC""").fetchall(), 
+            self.cur.execute("""SELECT captcha_string, date, model_path, MAX(training_samples) as training_samples, testing_samples, accuracy, better_than_90, better_than_95 FROM models_v1 GROUP BY captcha_string ORDER BY training_samples DESC""").fetchall(), 
             columns=["captcha_string","date","path", "training_samples","testing_samples","accuracy","better_than_90","better_than_95"])
         data.set_index("captcha_string",drop=True, inplace=True)
         data.rename_axis(None, inplace=True)

@@ -22,7 +22,7 @@ def plot_captcha_info(info, figsize=(4,10), threshold=200, limit=False):
     ax1.set_title("Available Images per Captcha Type")
 
 
-def plot_model_accuracy(info, figsize=(4,10)):
+def plot_model_accuracy(info, figsize=(4,10), threshold=0.9):
     if type(info) == pd.Series:
         info = info.to_frame()
     fig, ax1 = plt.subplots()
@@ -35,7 +35,7 @@ def plot_model_accuracy(info, figsize=(4,10)):
 
     info = info.sort_values(accuracy_columns[np.argmax(best_accuracy)], ascending=True)
 
-    ax1.axvline(95, color="red", label="goal", linestyle=":", alpha=0.8)
+    ax1.axvline(threshold*100.0, color="red", label="goal", linestyle=":", alpha=0.8)
 
     if len(accuracy_columns) == 1:
         ax1.barh(info.index, info[accuracy_columns[0]]*100.0, label=accuracy_columns[0].replace("accuracy","").replace("_",""), color="green", alpha=0.8)
