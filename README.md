@@ -18,7 +18,7 @@ pip install hcaptcha-solver
 ## Usage
 
 ```python
-from hcaptcha_solver import hcaptcha_solver
+from hcaptcha_solver import captcha_solver
 from selenium import webdriver
 
 # setup chromedriver in english (other languages not supported yet)
