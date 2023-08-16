@@ -155,10 +155,15 @@ def train_model_on_captcha_string(db1, captcha_string=None, save=True, epochs=50
 
 def train_models_on_all_captcha_strings(db1, threshold=100, save=True, epochs=50):
     info = db1.get_info()
+    model_info = db1.get_model_info()
     info = info[info["solved"] >= threshold]
     captcha_strings = info.index.values
     for captcha_string in captcha_strings:
-        train_model_on_captcha_string(db1, captcha_string, save=save, epochs=epochs)
+        if captcha_string not in model_info.index.values or info.loc[captcha_string]["solved"] > (model_info.loc[captcha_string,"training_samples"] + model_info.loc[captcha_string,"testing_samples"]).max():
+            print(f"Training model on {captcha_string} with {info.loc[captcha_string]['solved']} samples...")
+            train_model_on_captcha_string(db1, captcha_string, save=save, epochs=epochs)
+        else:
+            print(f"Skipping {captcha_string} with {info.loc[captcha_string]['solved']} samples...")
 
     
 def get_image_data(db_handler, captcha_string):

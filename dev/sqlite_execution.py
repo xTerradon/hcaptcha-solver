@@ -64,7 +64,7 @@ class DB_V1:
 
         data = pd.DataFrame(
             self.cur.execute("""SELECT captcha_string, date, model_path, training_samples, testing_samples, MAX(accuracy) as accuracy, better_than_90, better_than_95 FROM models_v1 GROUP BY captcha_string ORDER BY accuracy DESC""").fetchall(), 
-            columns=["captcha_string","date","path", "train_samples","test_samples","accuracy","better_than_90","better_than_95"])
+            columns=["captcha_string","date","path", "training_samples","testing_samples","accuracy","better_than_90","better_than_95"])
         data.set_index("captcha_string",drop=True, inplace=True)
         data.rename_axis(None, inplace=True)
         data.date = pd.to_datetime(data.date).dt.date
@@ -240,6 +240,22 @@ class DB_V1:
         if commit : self.commit()
 
         print(f"Removed {len(duplicate_filepaths)} duplicates from database")
+
+    
+    def drop_unuseable_images(self, commit=True):
+        """drops images that do not match the shape of the model"""
+
+        all_file_paths = [f[0] for f in self.cur.execute(f"SELECT file_path FROM {self.captchas_table_name}").fetchall()]
+
+        removed = 0
+        for file_path in all_file_paths:
+            if np.asarray(PIL.Image.open(IMAGES_DIR_V1+file_path)).shape != (128,128,3):
+                os.remove(IMAGES_DIR_V1+file_path)
+                self.cur.execute(f"DELETE FROM {self.captchas_table_name} WHERE file_path = ?", (file_path,))
+                removed += 1
+        print(f"Removed {removed} unuseable images")
+        if commit : self.commit()
+
 
 class DB_V2:
     def __init__(self, name="captchas", dir_prefix=""):

@@ -2,7 +2,7 @@ from matplotlib import pyplot as plt
 import numpy as np
 import pandas as pd
 
-def plot_captcha_info(info, figsize=(4,10), threshold=100, limit=False):
+def plot_captcha_info(info, figsize=(4,10), threshold=200, limit=False):
     fig, ax1 = plt.subplots()
 
     fig.set_figheight(figsize[0])
