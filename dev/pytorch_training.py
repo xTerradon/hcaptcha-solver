@@ -42,7 +42,7 @@ class Training:
 
         # Initialize weights using Xavier/Glorot initialization
         for layer in self.model:
-            if isinstance(layer, nn.Linear):
+            if isinstance(layer, nn.Linear) or isinstance(layer, nn.Conv2d):
                 init.xavier_uniform_(layer.weight)
 
         self.optimizer = optim.Adam(self.model.parameters(), lr=self.lr)
