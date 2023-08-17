@@ -63,8 +63,27 @@ class DB_V1:
         """returns a df with the most accurate models for each captcha_string"""
 
         data = pd.DataFrame(
-            self.cur.execute("""SELECT captcha_string, date, model_path, MAX(training_samples) as training_samples, testing_samples, accuracy, better_than_90, better_than_95 FROM models_v1 GROUP BY captcha_string ORDER BY training_samples DESC""").fetchall(), 
-            columns=["captcha_string","date","path", "training_samples","testing_samples","accuracy","better_than_90","better_than_95"])
+            self.cur.execute("""
+                SELECT   
+                    m1.captcha_string, m1.date, m1.model_path, m1.training_samples + m1.testing_samples as samples, 
+                    m1.training_samples, m1.testing_samples, m1.accuracy, m1.better_than_90, m1.better_than_95
+                FROM  
+                    models_v1 m1  
+                JOIN  
+                    (SELECT   
+                        captcha_string,  
+                        MAX(training_samples + testing_samples) AS max_samples,  
+                        MAX(date) AS max_date  
+                    FROM  
+                        models_v1  
+                    GROUP BY  
+                        captcha_string) m2  
+                ON  
+                    m1.captcha_string = m2.captcha_string  
+                    AND m1.training_samples + m1.testing_samples = m2.max_samples  
+                    AND m1.date = m2.max_date;  
+                """).fetchall(), 
+            columns=["captcha_string","date","path", "samples","training_samples","testing_samples","accuracy","better_than_90","better_than_95"])
         data.set_index("captcha_string",drop=True, inplace=True)
         data.rename_axis(None, inplace=True)
         data.date = pd.to_datetime(data.date).dt.date

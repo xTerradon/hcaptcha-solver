@@ -104,3 +104,4 @@ def display_image_with_circle(image_pil, position):
         outline="red", 
         width=3)
     display(image_cropped)
+    return image_cropped

@@ -200,6 +200,8 @@ def get_image_data(db2):
     return preprocess_pil(useable_images), preprocess_positions(positions_raw)
 
 def preprocess_pil(images):
+    if not isinstance(images, list):
+        images = [images]
     images = [image.crop(CLICKABLE_AREA_BOUNDARIES) for image in images]
     x = np.asarray(images)
     x = x / 255 # norming
@@ -207,6 +209,14 @@ def preprocess_pil(images):
     x = x[:,:-1,:,:] # remove alpha channel
     print(f"x shape: {x.shape}")
     return x
+
+def postprocess_pil(images):
+    if len(images.shape) == 3:
+        images = np.expand_dims(images, axis=0)
+    images *= 255
+    images = np.moveaxis(images, [1], [-1]) # color channel last
+    images = images.astype(np.uint8)
+    return images  
 
 def preprocess_positions(positions):
     y = np.asarray(positions)
