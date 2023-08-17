@@ -55,45 +55,48 @@ class Captcha_Solver:
         """
 
         if not wh.is_challenge_present(wd):
-            raise Exception("No active hCaptcha challenge present. Try using solve_captcha() instead")
-
-        try:
-            captcha_instructions, captcha_urls = wh.get_challenge_data(wd)
-        except Exception as e:
-            if self.verbose : print("Failed to get challenge data, trying again..."); print(e)
-            wh.refresh_challenge(wd)
+            if self.verbose : print("No active hCaptcha challenge present. Try using solve_captcha() instead")
             return self.solve_captcha(wd)
+
+        challenge_steps = wh.get_number_of_crumbs(wd)
+        for i in range(challenge_steps):
+            try:
+                captcha_instructions, captcha_urls = wh.get_challenge_data(wd)
+            except Exception as e:
+                if self.verbose : print("Failed to get challenge data, trying again..."); print(e)
+                wh.refresh_challenge(wd)
+                return self.solve_captcha(wd)
+                
+            captcha_str = normalize_captcha_string(captcha_instructions)
+            if self.verbose : print(f"Found Captcha task: {captcha_str}")
+
+            if captcha_str not in list(self.models.models.keys()):
+                if self.verbose : print(f"Model for captcha string {captcha_str} not found, trying again...")
+                wh.refresh_challenge(wd)
+                return self.solve_captcha(wd)
             
-        captcha_str = normalize_captcha_string(captcha_instructions)
-        if self.verbose : print(f"Found Captcha task: {captcha_str}")
+            if self.verbose : print("Found model for captcha string")
 
-        if captcha_str not in list(self.models.models.keys()):
-            if self.verbose : print(f"Model for captcha string {captcha_str} not found, trying again...")
-            wh.refresh_challenge(wd)
-            return self.solve_captcha(wd)
-        
-        if self.verbose : print("Found model for captcha string")
+            with Session() as s:
+                captcha_images = [Image.open(BytesIO(s.get(captcha_url).content)) for captcha_url in captcha_urls]
 
-        with Session() as s:
-            captcha_images = [Image.open(BytesIO(s.get(captcha_url).content)) for captcha_url in captcha_urls]
+            try:
+                image_labels = self.models.get_labels(captcha_str, captcha_images)
+            except Exception as e:
+                if self.verbose : print("Failed to get image labels, trying again..."); print(e)
+                wh.refresh_challenge(wd)
+                return self.solve_captcha(wd)
 
-        try:
-            image_labels = self.models.get_labels(captcha_str, captcha_images)
-        except Exception as e:
-            if self.verbose : print("Failed to get image labels, trying again..."); print(e)
-            wh.refresh_challenge(wd)
-            return self.solve_captcha(wd)
+            try:
+                wh.click_correct(wd, image_labels)
+            except Exception as e:
+                if self.verbose : print("Failed to click correct images, trying again..."); print(e)
+                wh.refresh_challenge(wd)
+                return self.solve_captcha(wd)
 
-        try:
-            wh.click_correct(wd, image_labels)
-        except Exception as e:
-            if self.verbose : print("Failed to click correct images, trying again..."); print(e)
-            wh.refresh_challenge(wd)
-            return self.solve_captcha(wd)
+            if self.verbose : print("Clicked correct images")
 
-        if self.verbose : print("Clicked correct images")
-
-        time.sleep(3)
+            time.sleep(3)
 
         if not wh.is_captcha_solved(wd):
             if self.verbose : print("Captcha solving failed, trying again...")

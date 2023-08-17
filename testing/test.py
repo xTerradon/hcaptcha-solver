@@ -11,3 +11,5 @@ driver.get("https://accounts.hcaptcha.com/demo") # open any url with hCaptcha
 captcha_solver = hcaptcha_solver.Captcha_Solver(verbose=True)
 captcha_solver.is_captcha_present(driver) # returns True
 captcha_solver.solve_captcha(driver) # solves the hCaptcha
+
+input("Click any button to continue...")

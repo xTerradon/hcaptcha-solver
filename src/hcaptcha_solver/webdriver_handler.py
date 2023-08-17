@@ -50,6 +50,19 @@ def launch_captcha(wd : webdriver.Chrome, timeout=5):
     WebDriverWait(wd, timeout).until(EC.frame_to_be_available_and_switch_to_it((By.XPATH,"//iframe[contains(@src,'hcaptcha') and contains(@src,'checkbox')]")))
     WebDriverWait(wd, timeout).until(EC.element_to_be_clickable((By.XPATH, "/html/body"))).click() # click on body to launch captcha
 
+def get_number_of_crumbs(wd : webdriver.Chrome, timeout=5):
+    """returns the number of crumbs in the captcha"""
+
+    assert isinstance(wd, webdriver.Chrome), "webdriver must be a selenium.webdriver.Chrome instance"
+
+    if not is_challenge_present(wd):
+        raise Exception("No hCaptcha challenge box present")
+    
+    wd.switch_to.default_content()
+
+    WebDriverWait(wd, timeout).until(EC.frame_to_be_available_and_switch_to_it((By.XPATH,"//iframe[contains(@src,'hcaptcha') and contains(@src,'challenge')]")))
+
+    return max(len(wd.find_elements(By.XPATH, "//div[@class='Crumb']")),1)
 
 def refresh_all_v2(wd : webdriver.Chrome, timeout=5):
     """skips all challenges until a v1 captcha is found"""

@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [tool.poetry]
 name = "hcaptcha-solver"
-version = "0.2.13"
+version = "0.2.14"
 authors = ["xTerradon"]
 description = "A lightweight python library for solving hCaptcha challenges with selenium."
 readme = "README.md"
@@ -16,6 +16,7 @@ classifiers = [
 ]
 
 [tool.poetry.dependencies]
+python = "^3.7"
 selenium = "*" 
 torch = "*"
 pillow = "*"
