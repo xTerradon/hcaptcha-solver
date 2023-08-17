@@ -58,14 +58,14 @@ def normalize_captcha_string(captcha_str):
     captcha_str = captcha_str.replace("Please click on all images containing ","")
     return captcha_str
 
-def collect_data(db_handler, url="https://accounts.hcaptcha.com/demo", count=100, collect_v2=False, limit=2000):
+def collect_data(db_handler, url="https://accounts.hcaptcha.com/demo", count=100, collect_v2=False, limit=2000, headless=True):
     if type(url) == list:
         print(f"Starting Threads for {len(url)} URLs")
         [threading.Thread(target=lambda: collect_data(db_handler, single_url, count=count)).start() for single_url in url]
         return
     
     url_str = url.replace("https://","").replace("http://","")
-    wd = wd_handler.Webdriver_Handler(url)
+    wd = wd_handler.Webdriver_Handler(url, headless=headless)
     wd.load_captcha()
     
     i = 0

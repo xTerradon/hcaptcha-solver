@@ -361,7 +361,7 @@ class DB_V2:
             if captcha_string + "/" + file_path not in all_file_paths:
                 added += 1
                 self.add_image(captcha_string + "/" + file_path, captcha_string, "unknown", commit=False)
-        print(f"Added {added} untracked images")
+        if added != 0 : print(f"Added {added} untracked images for {captcha_string}")
 
         self.commit() 
 
@@ -376,3 +376,14 @@ class DB_V2:
             else:
                 return pd.Series([solved_unsolved[0][0], 0], index=["unsolved", "solved"], name=captcha_string, dtype=int)
         return pd.Series([solved_unsolved[0][0], solved_unsolved[1][0]], index=["unsolved", "solved"], name=captcha_string, dtype=int)
+    
+    def get_info(self):
+        """get a df denoting total, unsolved and solved"""
+
+        total_amounts = self.cur.execute(f"SELECT captcha_string, COUNT(*) FROM {self.captchas_table_name} GROUP BY captcha_string").fetchall()
+        total_amounts = pd.Series([total_amount[1] for total_amount in total_amounts], index=[total_amount[0] for total_amount in total_amounts], name="total", dtype=int)
+        solved_amounts = self.cur.execute(f"SELECT captcha_string, COUNT(*) FROM {self.captchas_table_name} WHERE solved = True GROUP BY captcha_string").fetchall()
+        solved_amounts = pd.Series([solved_amount[1] for solved_amount in solved_amounts], index=[solved_amount[0] for solved_amount in solved_amounts], name="solved", dtype=int)
+        unsolved_amounts = self.cur.execute(f"SELECT captcha_string, COUNT(*) FROM {self.captchas_table_name} WHERE solved = False GROUP BY captcha_string").fetchall()
+        unsolved_amounts = pd.Series([unsolved_amount[1] for unsolved_amount in unsolved_amounts], index=[unsolved_amount[0] for unsolved_amount in unsolved_amounts], name="unsolved", dtype=int)
+        return pd.concat((total_amounts, solved_amounts, unsolved_amounts), axis=1).fillna(0).astype(int).sort_values(by=["solved","total"], ascending=False)

@@ -17,10 +17,12 @@ from io import BytesIO
 IMAGES_DIR_V2 = "../data/images/v2/"
 
 class Webdriver_Handler:
-    def __init__(self, url):
+    def __init__(self, url, headless=False):
         options = webdriver.ChromeOptions()
         options.add_argument('disable-infobars')
         options.add_argument("--window-size=800,820")
+        options.add_argument("--disable-extensions")
+        if headless : options.add_argument("--headless")
 
         options.add_experimental_option('useAutomationExtension', False)
 
