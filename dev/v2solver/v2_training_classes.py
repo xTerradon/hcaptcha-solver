@@ -25,34 +25,42 @@ class CustomMSE(nn.Module):
     def forward(self, output, target, verbose=False):  
         assert output.size() == target.size()  
   
-        clickable = target > 0.5
-
         squared_diff = (output - target) ** 2
-        squared_diff *= target + 0.1
+        
+        # clickable = target > 0.2
+        # squared_diff[clickable] *= 10 # 5, 10, 20
+
+        squared_diff *= (target + 0.05) # 0.1, 0.2
+
         return torch.mean(squared_diff)
 
 class Model_Training:
     def __init__(self, grid_size=16):
         self.grid_size = grid_size
         self.batch_size = 16
-        self.lr = 0.005
+        self.lr = 0.001
         self.log_interval = 1
         
         # Define your convolutional layers  
         self.model = nn.Sequential(  
-            nn.Conv2d(3, 8, kernel_size=7, padding=3),  
-            # nn.BatchNorm2d(8),  
-            nn.ReLU(),  
-            nn.MaxPool2d(2, stride=2),  
-            nn.Conv2d(8, 16, kernel_size=5, padding=2),  
+            nn.Conv2d(3, 16, kernel_size=7, padding=3),  
             # nn.BatchNorm2d(16),  
             nn.ReLU(),  
             nn.MaxPool2d(2, stride=2),  
-            nn.Conv2d(16, 32, kernel_size=3, padding=1),  
-            # nn.BatchNorm2d(32),  
+            nn.Conv2d(16, 32, kernel_size=5, padding=2),  
+            # nn.BatchNorm2d(32), 
             nn.ReLU(),  
             nn.MaxPool2d(2, stride=2),  
-            nn.Conv2d(32, 1, kernel_size=1, padding=0),  
+            nn.Conv2d(32, 64, kernel_size=3, padding=1),  
+            # nn.BatchNorm2d(64),   
+            nn.ReLU(),   
+            nn.Conv2d(64, 32, kernel_size=3, padding=1),  
+            # nn.BatchNorm2d(32), 
+            nn.ReLU(),   
+            nn.Conv2d(32, 16, kernel_size=3, padding=1),  
+            # nn.BatchNorm2d(16), 
+            nn.ReLU(), 
+            nn.Conv2d(16, 1, kernel_size=1, padding=0),  
             nn.AdaptiveMaxPool2d((grid_size, grid_size)), 
             nn.Sigmoid()
         )  
@@ -123,14 +131,17 @@ class Model_Training:
             with torch.no_grad():
                 for i, (data, target) in enumerate(test_loader):
                     output = self.model(data)
-                    print(output.shape, target.shape)
+                    # print(output.shape, target.shape)
                     test_loss += self.criterion(output, target).item()
 
             if verbose : print(f'Epoch: {epoch}, Train Loss: {train_loss:.4f} Test Loss: {test_loss:.4f}'); # print(output[0], target[0])
-            fig, axs = plt.subplots(2,5, figsize=(10,5))
+            fig, axs = plt.subplots(3,5, figsize=(10,5))
+            # print("sum", target[0].sum())
+            print(output[0][0][0][:3][:3])
             for i in range(5):
                 axs[0][i].imshow(output[i][0], vmin=0, vmax=1)
                 axs[1][i].imshow(target[i][0], vmin=0, vmax=1)
+                axs[2][i].imshow(output[i][0] == output[i][0].max().max(), vmin=0, vmax=1)
                 axs[0][i].set_title(round(self.criterion(output[i], target[i]).item()*1000,3))
             plt.show()
 
