@@ -102,7 +102,7 @@ class Model:
             return output.round().detach().numpy()
 
 
-def data_to_loader(x, y, test_split=0.25, batch_size=16):
+def data_to_loader(x, y, test_split=0.25, batch_size=16, augment_images=False):
     assert len(x) == len(y), "x and y must have the same length"
     assert len(x) >= 64, "at least 64 samples required for training"
 
@@ -118,24 +118,52 @@ def data_to_loader(x, y, test_split=0.25, batch_size=16):
     test_size += overhang
 
     print(f"train size: {train_size}, test size: {test_size}")
-    train_dataset, test_dataset = torch.utils.data.random_split(dataset, [train_size, test_size])
+    train_indices, test_indices = torch.utils.data.random_split(np.arange(len(dataset)), [train_size, test_size])
+
+    if augment_images: 
+        train_dataset = augment(dataset[train_indices])
+    else:
+        train_dataset = utils.Subset(dataset, train_indices)
+    
+    test_dataset = utils.Subset(dataset, test_indices)
 
     train_loader = utils.DataLoader(train_dataset, batch_size=batch_size, drop_last=True, shuffle=True)
     test_loader = utils.DataLoader(test_dataset, batch_size=test_size, drop_last=True, shuffle=True)
 
     print("single element shape:", train_loader.dataset[0][0].shape)
 
-    return train_loader, test_loader
+    return train_loader, test_loader, train_indices, test_indices
 
 
-def train_model_on_captcha_string(db1, captcha_string=None, save=True, epochs=50):
+def augment(dataset):
+    from PIL import Image
+    data = dataset[0].numpy()
+    
+    l = len(data)
+    labels = dataset[1].numpy()
+
+    # print(data.shape)
+    # img0 = (np.moveaxis(data[0],[0],[-1]) * 255).astype(np.uint8)
+    # display(Image.fromarray(img0))
+
+    data = np.concatenate((data, np.flip(data, axis=-1)))
+    labels = np.concatenate((labels, labels))
+
+    # print(data.shape)
+    # img0 = (np.moveaxis(data[l],[0],[-1]) * 255).astype(np.uint8)
+    # display(Image.fromarray(img0))
+
+    return utils.TensorDataset(torch.from_numpy(data).float(), torch.from_numpy(labels).float())
+
+
+def train_model_on_captcha_string(db1, captcha_string=None, save=True, epochs=50, augment_images=False):
     if captcha_string is None:
         captcha_string = db1.get_most_solved_captcha_string()
     print(f'Training model on {captcha_string}...')
     
     x,y = get_image_data(db1, captcha_string)
 
-    train_loader, test_loader = data_to_loader(x, y)
+    train_loader, test_loader, train_indices, test_indices = data_to_loader(x, y, augment_images=augment_images)
 
     training = Training()
     model, accuracy = training.train(train_loader, test_loader, epochs=epochs)
@@ -153,15 +181,19 @@ def train_model_on_captcha_string(db1, captcha_string=None, save=True, epochs=50
         torch.save(model, path)
         print(f"Saved model to {path}")
 
-def train_models_on_all_captcha_strings(db1, threshold=100, save=True, epochs=50):
+def train_models_on_all_captcha_strings(db1, threshold=100, save=True, epochs=50, only_updated=True, augment_images=False):
     info = db1.get_info()
     model_info = db1.get_model_info()
     info = info[info["solved"] >= threshold]
     captcha_strings = info.index.values
     for captcha_string in captcha_strings:
-        if captcha_string not in model_info.index.values or info.loc[captcha_string]["solved"] > (model_info.loc[captcha_string,"training_samples"] + model_info.loc[captcha_string,"testing_samples"]).max():
+        if (
+            not only_updated or 
+            captcha_string not in model_info.index.values or 
+            info.loc[captcha_string]["solved"] > (model_info.loc[captcha_string,"training_samples"] + model_info.loc[captcha_string,"testing_samples"]).max()
+            ):
             print(f"Training model on {captcha_string} with {info.loc[captcha_string]['solved']} samples...")
-            train_model_on_captcha_string(db1, captcha_string, save=save, epochs=epochs)
+            train_model_on_captcha_string(db1, captcha_string, save=save, epochs=epochs, augment_images=augment_images)
         else:
             print(f"Skipping {captcha_string} with {info.loc[captcha_string]['solved']} samples...")
 

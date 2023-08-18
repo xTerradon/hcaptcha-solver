@@ -64,24 +64,15 @@ class DB_V1:
 
         data = pd.DataFrame(
             self.cur.execute("""
-                SELECT   
-                    m1.captcha_string, m1.date, m1.model_path, m1.training_samples + m1.testing_samples as samples, 
+                WITH ranked_models AS (  
+                SELECT *,  
+                    ROW_NUMBER() OVER (PARTITION BY captcha_string ORDER BY training_samples + testing_samples DESC, accuracy DESC) AS rank  
+                FROM models_v1  
+                )  
+                SELECT m1.captcha_string, m1.date, m1.model_path, m1.training_samples + m1.testing_samples as samples, 
                     m1.training_samples, m1.testing_samples, m1.accuracy, m1.better_than_90, m1.better_than_95
-                FROM  
-                    models_v1 m1  
-                JOIN  
-                    (SELECT   
-                        captcha_string,  
-                        MAX(training_samples + testing_samples) AS max_samples,  
-                        MAX(date) AS max_date  
-                    FROM  
-                        models_v1  
-                    GROUP BY  
-                        captcha_string) m2  
-                ON  
-                    m1.captcha_string = m2.captcha_string  
-                    AND m1.training_samples + m1.testing_samples = m2.max_samples  
-                    AND m1.date = m2.max_date;  
+                FROM ranked_models m1
+                WHERE rank = 1;  
                 """).fetchall(), 
             columns=["captcha_string","date","path", "samples","training_samples","testing_samples","accuracy","better_than_90","better_than_95"])
         data.set_index("captcha_string",drop=True, inplace=True)
