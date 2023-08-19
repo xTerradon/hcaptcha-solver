@@ -30,7 +30,7 @@ class CustomMSE(nn.Module):
         # clickable = target > 0.2
         # squared_diff[clickable] *= 10 # 5, 10, 20
 
-        squared_diff *= (target + 0.05) # 0.1, 0.2
+        squared_diff *= (target) # 0.1, 0.2
 
         return torch.mean(squared_diff)
 
@@ -135,13 +135,14 @@ class Model_Training:
                     test_loss += self.criterion(output, target).item()
 
             if verbose : print(f'Epoch: {epoch}, Train Loss: {train_loss:.4f} Test Loss: {test_loss:.4f}'); # print(output[0], target[0])
-            fig, axs = plt.subplots(3,5, figsize=(10,5))
+            fig, axs = plt.subplots(4,5, figsize=(10,5))
             # print("sum", target[0].sum())
             print(output[0][0][0][:3][:3])
             for i in range(5):
                 axs[0][i].imshow(output[i][0], vmin=0, vmax=1)
                 axs[1][i].imshow(target[i][0], vmin=0, vmax=1)
                 axs[2][i].imshow(output[i][0] == output[i][0].max().max(), vmin=0, vmax=1)
+                axs[3][i].imshow(postprocess_pil(data[i].numpy()))
                 axs[0][i].set_title(round(self.criterion(output[i], target[i]).item()*1000,3))
             plt.show()
 

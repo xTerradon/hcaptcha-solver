@@ -236,7 +236,7 @@ class DB_V1:
 
         all_file_paths = [f[0] for f in self.cur.execute(f"SELECT file_path FROM {self.captchas_table_name}").fetchall()]
 
-        hashed = [np.asarray(PIL.Image.open(IMAGES_DIR_V1+file_path)).data.tobytes() for file_path in all_file_paths]
+        hashed = [np.asarray(PIL.Image.open(IMAGES_DIR_V1+file_path))[::10].data.tobytes() for file_path in all_file_paths]
         un = np.unique(hashed, return_index=True, return_counts=True)
 
         duplicate_indexes = np.delete(np.arange(len(all_file_paths)),un[1])
@@ -256,7 +256,6 @@ class DB_V1:
         """drops images that do not match the shape of the model"""
 
         all_file_paths = [f[0] for f in self.cur.execute(f"SELECT file_path FROM {self.captchas_table_name}").fetchall()]
-
         removed = 0
         for file_path in all_file_paths:
             if np.asarray(PIL.Image.open(IMAGES_DIR_V1+file_path)).shape != (128,128,3):
