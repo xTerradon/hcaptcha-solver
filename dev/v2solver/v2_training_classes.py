@@ -20,17 +20,21 @@ CLICKABLE_AREA_SIZE = (CLICKABLE_AREA_BOUNDARIES[2] - CLICKABLE_AREA_BOUNDARIES[
 
 class CustomMSE(nn.Module):  
     def __init__(self):  
-        super(CustomMSE, self).__init__()  
+        super(CustomMSE, self).__init__() 
+
+    def get_loss(self, output, target):
+        squared_diff = (output - target) ** 2
+        
+        clickable = target > 0.5
+        squared_diff[clickable] *= 10 # 5, 10, 20
+
+        #squared_diff *= (target) # 0.1, 0.2
+        return squared_diff
   
     def forward(self, output, target, verbose=False):  
         assert output.size() == target.size()  
   
-        squared_diff = (output - target) ** 2
-        
-        # clickable = target > 0.2
-        # squared_diff[clickable] *= 10 # 5, 10, 20
-
-        squared_diff *= (target) # 0.1, 0.2
+        squared_diff = self.get_loss(output, target)    
 
         return torch.mean(squared_diff)
 
@@ -135,15 +139,20 @@ class Model_Training:
                     test_loss += self.criterion(output, target).item()
 
             if verbose : print(f'Epoch: {epoch}, Train Loss: {train_loss:.4f} Test Loss: {test_loss:.4f}'); # print(output[0], target[0])
-            fig, axs = plt.subplots(4,5, figsize=(10,5))
+            fig, axs = plt.subplots(3,5, figsize=(12,6), )
+
             # print("sum", target[0].sum())
             print(output[0][0][0][:3][:3])
+            print(output_to_plt(data[0].numpy())[0].shape)
+
             for i in range(5):
+                [axs[i2][i].axis('off') for i2 in range(len(axs))]
                 axs[0][i].imshow(output[i][0], vmin=0, vmax=1)
                 axs[1][i].imshow(target[i][0], vmin=0, vmax=1)
-                axs[2][i].imshow(output[i][0] == output[i][0].max().max(), vmin=0, vmax=1)
-                axs[3][i].imshow(postprocess_pil(data[i].numpy()))
+                axs[1][1].imshow(self.criterion.get_loss(target[i], target[i]).numpy()[0])
+                axs[2][i].imshow(output_to_plt(data[i].numpy())[0])
                 axs[0][i].set_title(round(self.criterion(output[i], target[i]).item()*1000,3))
+            plt.tight_layout()
             plt.show()
 
         return self.model
@@ -217,6 +226,12 @@ def postprocess_pil(images):
     images = np.moveaxis(images, [1], [-1]) # color channel last
     images = images.astype(np.uint8)
     return images  
+
+def output_to_plt(images):
+    if len(images.shape) == 3:
+        images = np.expand_dims(images, axis=0)
+    images = np.moveaxis(images, [1], [-1]) # color channel last
+    return images
 
 def preprocess_positions(positions, grid_size=16):
     y = np.asarray(positions)
